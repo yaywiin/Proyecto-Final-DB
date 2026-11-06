@@ -70,9 +70,9 @@ Nadie aprueba su propio PR. Si una revisión pasa de 24 horas, el autor escribe 
 
 ## Contratos entre partes
 
-Para no esperarnos, programamos contra nombres acordados (tablas, columnas, funciones y vistas), que están en `Modelo_Datos.md`.
+Para no esperarnos, programamos contra nombres acordados (tablas, columnas, funciones y vistas), que están en `docs/Modelo_Datos.md`.
 
-- Si alguien necesita cambiar un nombre o una firma, lo avisa por el chat **antes** de cambiarlo, y se actualiza `Modelo_Datos.md`.
+- Si alguien necesita cambiar un nombre o una firma, lo avisa por el chat **antes** de cambiarlo, y se actualiza `docs/Modelo_Datos.md`.
 - Cada quien prueba con su base local y los datos semilla de `sql/`.
 
 ## Comunicación
@@ -88,7 +88,7 @@ Un issue se cierra cuando:
 - Cumple lo que dice "Listo cuando" del issue.
 - Se probó con los datos semilla.
 - Otra persona lo revisó y se unió a `main`.
-- Si cambió algo del modelo o del contrato, `Modelo_Datos.md` está actualizado.
+- Si cambió algo del modelo o del contrato, `docs/Modelo_Datos.md` está actualizado.
 
 ## Si algo se atrasa
 

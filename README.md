@@ -70,7 +70,7 @@ Se controla por fecha y por vehículo, y hay descuento para clientes con más de
 
 ## Estructura de la base de datos
 
-Tablas: `Usuarios`, `Clientes`, `Vehiculos`, `Precios`, `Servicios`, `Cobros` y `Pensiones`. El detalle, el diagrama ER y las reglas de integridad están en [Modelo_Datos.md](Modelo_Datos.md).
+Tablas: `Usuarios`, `Clientes`, `Vehiculos`, `Precios`, `Servicios`, `Cobros` y `Pensiones`. El detalle, el diagrama ER y las reglas de integridad están en [Modelo_Datos.md](docs/Modelo_Datos.md).
 
 ## Reparto del equipo
 
@@ -88,7 +88,7 @@ Los roles no son cerrados: nos ayudamos entre todos.
 ```
 Proyecto Final/
 ├── README.md
-├── Modelo_Datos.md
+├── docs/           # modelo de datos, forma de trabajo y guía de inicio
 ├── sql/            # script de tablas, datos de prueba, vistas y triggers
 ├── modelo/         # acceso a la BD (consultas)
 ├── vista/          # ventanas Tkinter
@@ -98,11 +98,19 @@ Proyecto Final/
 
 Es una propuesta y puede cambiar cuando se empiece el código.
 
+## Documentación
+
+| Archivo | Para qué sirve |
+|---|---|
+| [docs/Modelo_Datos.md](docs/Modelo_Datos.md) | Tablas, columnas, diagrama ER y reglas de integridad |
+| [docs/WoW.md](docs/WoW.md) | Cómo trabajamos: ramas, pull requests, revisiones y comunicación |
+| [docs/Guia_Inicio.md](docs/Guia_Inicio.md) | Comandos paso a paso: instalar, crear la base, subir cambios y abrir un PR |
+
 ## Pasos a seguir
 
 - [x] Definir el stack, el patrón y la tarifa.
 - [x] Decidir fracciones de hora, clientes frecuentes, clientes de paso y contraseñas.
-- [x] Proponer el modelo de datos ([Modelo_Datos.md](Modelo_Datos.md)).
+- [x] Proponer el modelo de datos ([Modelo_Datos.md](docs/Modelo_Datos.md)).
 - [ ] Definir la pensión: modalidad, precio y % de descuento después de 2 años.
 - [ ] Definir cuántas visitas hacen frecuente a un cliente.
 - [ ] Resolver las dudas con el profesor (abajo).
