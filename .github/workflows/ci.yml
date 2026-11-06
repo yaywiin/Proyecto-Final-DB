@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  base-de-datos:
+    name: Script SQL desde cero
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ejecutar sql/*.sql en orden
+        run: |
+          if [ ! -d sql ] || ! ls sql/*.sql >/dev/null 2>&1; then
+            echo "Todavía no hay scripts en sql/, se omite."
+            exit 0
+          fi
+          for f in $(ls sql/*.sql | sort); do
+            echo "==> $f"
+            mysql --protocol=TCP -h127.0.0.1 -uroot -proot < "$f"
+          done
+
+  python:
+    name: Código Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Revisar errores de sintaxis
+        run: |
+          if [ ! -d app ]; then
+            echo "Todavía no hay carpeta app/, se omite."
+            exit 0
+          fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install flake8
+          python -m compileall -q app
+          flake8 app --select=E9,F63,F7,F82 --show-source
+      - name: Correr pruebas si existen
+        run: |
+          if [ -d tests ]; then
+            pip install pytest
+            pytest -q
+          else
+            echo "No hay carpeta tests/, se omite."
+          fi
+
+  archivos-prohibidos:
+    name: Sin archivos personales ni secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Revisar que no se hayan subido
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)(config\.py|CLAUDE\.md|\.env)$' || true)
+          if [ -n "$bad" ]; then
+            echo "No deben estar en el repo:"; echo "$bad"; exit 1
+          fi
