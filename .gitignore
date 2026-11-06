@@ -1,0 +1,17 @@
+# Archivos personales de Claude Code
+CLAUDE.md
+.claude/
+
+# Configuración local (contraseñas de la BD)
+config.py
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Sistema y editores
+.DS_Store
+.vscode/
+.idea/
