@@ -2,7 +2,7 @@
 
 Los comandos para trabajar en el proyecto, de la primera vez al pull request. Las reglas del equipo están en [WoW.md](WoW.md).
 
-> Algunas rutas (`sql/`, `config.example.py`, `requirements.txt`) se crean al arrancar el hito 1. Si todavía no existen, esta guía describe cómo van a quedar.
+> Algunas rutas (`database/`, `config.example.py`, `requirements.txt`) se crean al arrancar el hito 1. Si todavía no existen, esta guía describe cómo van a quedar.
 
 ## 1. Primera vez
 
@@ -44,10 +44,10 @@ Abre `config.py` y pon tus datos locales (en XAMPP el usuario suele ser `root` s
 
 ### 1.6 Crear la base de datos local
 
-Los scripts de `sql/` van numerados y se corren en orden:
+Los scripts de `database/` van numerados y se corren en orden:
 
 ```bash
-for f in sql/*.sql; do /Applications/XAMPP/xamppfiles/bin/mysql -u root < "$f"; done
+for f in database/*.sql; do /Applications/XAMPP/xamppfiles/bin/mysql -u root < "$f"; done
 ```
 
 En Windows, usa el `mysql.exe` que está en la carpeta `mysql\bin` de XAMPP, o abre phpMyAdmin e importa cada archivo en orden.
@@ -57,7 +57,7 @@ En Windows, usa el `mysql.exe` que está en la carpeta `mysql\bin` de XAMPP, o a
 No usamos herramientas de migraciones. La base se vuelve a crear desde cero cada vez:
 
 - Los scripts empiezan con `DROP DATABASE IF EXISTS ...` y `CREATE DATABASE ...`, así que correrlos de nuevo reinicia todo.
-- Si alguien cambia una tabla, **edita el script** (`01_tablas.sql`) en lugar de escribir un `ALTER`. Avisa en el chat y los demás vuelven a correr el comando de 1.6.
+- Si alguien cambia una tabla, **edita el script** (por ejemplo `01_tablas.sql`) en lugar de escribir un `ALTER`. Avisa en el chat y los demás vuelven a correr el comando de 1.6.
 - El CI hace lo mismo en cada pull request, así que si tu script falla desde cero, el PR sale en rojo.
 
 ## 3. Trabajar en una tarea

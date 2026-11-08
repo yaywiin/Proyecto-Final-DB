@@ -20,7 +20,7 @@ Reglas cortas para que los tres avancemos sin estorbarnos. Si algo no funciona, 
 
 | Persona | Es dueño de |
 |---|---|
-| Carlos | `sql/` y el diagrama ER |
+| Carlos | `database/` y el diagrama ER |
 | Cristobal | Login, menú, usuarios, clientes, vehículos y permisos |
 | Yael | `main.py`, `config`, conexión, entradas y salidas, cobros, pensiones y reportes |
 
@@ -73,7 +73,7 @@ Nadie aprueba su propio PR. Si una revisión pasa de 24 horas, el autor escribe 
 Para no esperarnos, programamos contra nombres acordados (tablas, columnas, funciones y vistas), que están en `docs/Modelo_Datos.md`.
 
 - Si alguien necesita cambiar un nombre o una firma, lo avisa por el chat **antes** de cambiarlo, y se actualiza `docs/Modelo_Datos.md`.
-- Cada quien prueba con su base local y los datos semilla de `sql/`.
+- Cada quien prueba con su base local y los datos semilla de `database/`.
 
 ## Comunicación
 
