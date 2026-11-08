@@ -90,10 +90,13 @@ Proyecto Final/
 ├── README.md
 ├── docs/           # modelo de datos, forma de trabajo y guía de inicio
 ├── database/       # script de tablas, datos de prueba, vistas y triggers
-├── modelo/         # acceso a la BD (consultas)
-├── vista/          # ventanas Tkinter
-├── controlador/    # lógica: login, cálculo de cobros, validaciones
-└── main.py         # punto de entrada
+├── requirements.txt
+└── app/
+    ├── main.py         # punto de entrada
+    ├── config.example.py  # plantilla de configuración (config.py no se sube)
+    ├── modelo/         # acceso a la BD (consultas); conexion.py abre la conexión
+    ├── vista/          # ventanas Tkinter
+    └── controlador/    # lógica: login, cálculo de cobros, validaciones
 ```
 
 Es una propuesta y puede cambiar cuando se empiece el código.
