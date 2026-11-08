@@ -89,7 +89,7 @@ Los roles no son cerrados: nos ayudamos entre todos.
 Proyecto Final/
 ├── README.md
 ├── docs/           # modelo de datos, forma de trabajo y guía de inicio
-├── sql/            # script de tablas, datos de prueba, vistas y triggers
+├── database/       # script de tablas, datos de prueba, vistas y triggers
 ├── modelo/         # acceso a la BD (consultas)
 ├── vista/          # ventanas Tkinter
 ├── controlador/    # lógica: login, cálculo de cobros, validaciones
