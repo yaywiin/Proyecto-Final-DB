@@ -2,8 +2,6 @@
 
 Los comandos para trabajar en el proyecto, de la primera vez al pull request. Las reglas del equipo están en [WoW.md](WoW.md).
 
-> Algunas rutas (`database/`, `config.example.py`, `requirements.txt`) se crean al arrancar el hito 1. Si todavía no existen, esta guía describe cómo van a quedar.
-
 ## 1. Primera vez
 
 ### 1.1 Clonar el repo
@@ -37,10 +35,10 @@ Abre XAMPP y presiona **Start** en MySQL. Si no enciende, revisa que otro progra
 ### 1.5 Configurar la conexión
 
 ```bash
-cp config.example.py config.py
+cp app/config.example.py app/config.py
 ```
 
-Abre `config.py` y pon tus datos locales (en XAMPP el usuario suele ser `root` sin contraseña). **Ese archivo no se sube a Git.**
+Abre `app/config.py` y pon tus datos locales (en XAMPP el usuario suele ser `root` sin contraseña). **Ese archivo no se sube a Git.**
 
 ### 1.6 Crear la base de datos local
 
@@ -51,6 +49,33 @@ for f in database/*.sql; do /Applications/XAMPP/xamppfiles/bin/mysql -u root < "
 ```
 
 En Windows, usa el `mysql.exe` que está en la carpeta `mysql\bin` de XAMPP, o abre phpMyAdmin e importa cada archivo en orden.
+
+### 1.7 Probar la conexión
+
+```bash
+python -m app.main
+```
+
+Debe imprimir `✓ Conexión exitosa`. Si falla, el mensaje te dice qué hacer (encender MySQL, crear la base o revisar `app/config.py`).
+
+## Cómo usar la base desde el código
+
+Solo `app/modelo/` habla con la base, y lo hace con las funciones de `app/modelo/conexion.py`:
+
+```python
+from app.modelo.conexion import consultar, insertar, ejecutar, transaccion
+
+filas = consultar("SELECT * FROM clientes WHERE id_cliente = %s", (1,))   # lista de diccionarios
+nuevo_id = insertar("INSERT INTO clientes (nombre) VALUES (%s)", ("Ana",))  # id generado
+afectadas = ejecutar("UPDATE clientes SET telefono = %s WHERE id_cliente = %s", ("5551234567", 2))
+
+# varias sentencias que se guardan todas o ninguna
+with transaccion() as cur:
+    cur.execute("UPDATE servicios SET fecha_salida = NOW() WHERE id_servicio = %s", (5,))
+    cur.execute("INSERT INTO cobros (id_servicio, id_usuario, monto) VALUES (%s, %s, %s)", (5, 1, 90))
+```
+
+Los valores siempre van como parámetros (`%s`), nunca pegados al texto del SQL.
 
 ## 2. Cambios en la base: no hay migraciones
 
