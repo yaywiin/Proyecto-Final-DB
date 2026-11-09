@@ -2,6 +2,7 @@
 -- Proyecto Final: Estacionamiento Público
 -- Script de creación de la base de datos (MariaDB / XAMPP)
 -- =====================================================================
+DROP DATABASE IF EXISTS estacionamiento;
 CREATE DATABASE estacionamiento
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_general_ci;
