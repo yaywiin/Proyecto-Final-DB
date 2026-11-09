@@ -124,10 +124,10 @@ CREATE TABLE cobros (
   KEY idx_cobros_fecha (fecha_cobro),
   CONSTRAINT fk_cobros_servicio
     FOREIGN KEY (id_servicio) REFERENCES servicios (id_servicio)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_cobros_pension
     FOREIGN KEY (id_pension) REFERENCES pensiones (id_pension)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_cobros_usuario
     FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
     ON UPDATE CASCADE ON DELETE RESTRICT,
