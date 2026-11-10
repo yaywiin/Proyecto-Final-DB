@@ -31,7 +31,7 @@ Si necesitas algo en un archivo ajeno, abre un issue para el dueño o pídelo po
 - **Ramas:** una por issue, con el formato `nombre/tema`, por ejemplo `cristobal/login`.
 - **Nadie sube directo a `main`.** Todo entra por pull request.
 - **Pull requests:**
-  - Se abren cuando el issue está listo para revisarse, y mencionan el issue (`Cierra #12`).
+  - Se abren cuando el issue está listo para revisarse, y mencionan el issue (`Closes #12`).
   - Los revisa otra persona. Si no hay problemas, la misma persona que revisó hace el merge.
   - Se espera la revisión máximo 24 horas. Si pasa más, se avisa por el chat.
 - **Antes de abrir un PR:** traer los últimos cambios de `main` a tu rama y probar que tu código corre.
@@ -41,7 +41,7 @@ Si necesitas algo en un archivo ajeno, abre un issue para el dueño o pídelo po
 ## Cómo se hace una revisión
 
 1. Terminas tu issue en tu rama y la subes.
-2. Abres un pull request hacia `main`. En la descripción: `Cierra #12` y dos líneas con qué hiciste y cómo probarlo.
+2. Abres un pull request hacia `main`. En la descripción: `Closes #12` y dos líneas con qué hiciste y cómo probarlo.
 3. Pides la revisión a quien le toca (tabla de abajo) y avisas en el chat.
 4. El revisor lee los cambios y los prueba:
    - Si está bien, aprueba y hace el merge.
