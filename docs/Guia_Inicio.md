@@ -120,13 +120,13 @@ git push -u origin nombre/tema
 Con la terminal:
 
 ```bash
-gh pr create --title "Login con perfiles" --body "Cierra #12. Valida usuario y contraseña. Se prueba con el admin de los datos semilla."
+gh pr create --title "Login con perfiles" --body "Closes #12. Valida usuario y contraseña. Se prueba con el admin de los datos semilla."
 ```
 
 O desde GitHub: aparece un botón verde **Compare & pull request** al subir la rama.
 
 En la descripción:
-- `Cierra #número` del issue, para que se cierre solo al unirse.
+- `Closes #número` del issue, para que se cierre solo al unirse.
 - Dos líneas con qué hiciste y cómo probarlo.
 
 Después, pide la revisión a quien te toca según la tabla de [WoW.md](WoW.md) y avisa en el chat.
