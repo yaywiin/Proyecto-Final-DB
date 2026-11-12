@@ -11,20 +11,24 @@ Modelo final de la base de datos `estacionamiento` (MariaDB). Refleja los script
 | Clientes de paso | Cliente genérico `id_cliente = 1` "Público general" |
 | Contraseñas | Hash SHA-256 en hexadecimal (64 caracteres) |
 | Pensión | Por fecha y vehículo. Precio y % de descuento por definir |
+| Tablas de detalle | Solicitadas por el profesor: `detalle_servicios` (entre vehículos y servicios) y `detalle_cobros` (entre vehículos y cobros) |
 
 ## Diagrama ER
 
 ```mermaid
 erDiagram
-    USUARIOS ||--o{ SERVICIOS : "registra entrada"
+    USUARIOS ||--o{ DETALLE_SERVICIOS : "registra entrada"
     USUARIOS ||--o{ PENSIONES : "registra"
     USUARIOS ||--o{ COBROS : "cobra"
     CLIENTES ||--o{ VEHICULOS : "es dueño"
     CLIENTES ||--o{ PENSIONES : "contrata"
-    VEHICULOS ||--o{ SERVICIOS : "entra y sale"
+    VEHICULOS ||--o{ DETALLE_SERVICIOS : "recibe"
     VEHICULOS ||--o{ PENSIONES : "cubre"
-    SERVICIOS ||--o| COBROS : "se cobra"
-    PENSIONES ||--o| COBROS : "se cobra"
+    VEHICULOS ||--o{ DETALLE_COBROS : "ampara"
+    SERVICIOS ||--o{ DETALLE_SERVICIOS : "se aplica en"
+    COBROS ||--o{ DETALLE_COBROS : "desglosa"
+    DETALLE_SERVICIOS ||--o| DETALLE_COBROS : "se cobra"
+    PENSIONES ||--o| DETALLE_COBROS : "se cobra"
 
     USUARIOS {
         int id_usuario PK
@@ -50,7 +54,14 @@ erDiagram
     }
     SERVICIOS {
         int id_servicio PK
+        varchar50 nombre_servicio UK
+        varchar255 descripcion
+        tinyint activo
+    }
+    DETALLE_SERVICIOS {
+        int id_detalle_servicio PK
         varchar15 matricula FK
+        int id_servicio FK
         int id_usuario FK
         datetime fecha_entrada
         datetime fecha_salida "NULL mientras sigue dentro"
@@ -66,12 +77,18 @@ erDiagram
     }
     COBROS {
         int id_cobro PK
-        int id_servicio FK "UNIQUE, NULL si es pension"
-        int id_pension FK "UNIQUE, NULL si es servicio"
         int id_usuario FK
+        decimal monto_total
+        datetime fecha_cobro
+    }
+    DETALLE_COBROS {
+        int id_detalle_cobro PK
+        int id_cobro FK
+        varchar15 matricula FK
+        int id_detalle_servicio FK "UNIQUE, NULL si es pension"
+        int id_pension FK "UNIQUE, NULL si es estancia"
         decimal horas_cobradas
         decimal monto
-        datetime fecha_cobro
     }
     PRECIOS {
         int id_precio PK
@@ -95,9 +112,11 @@ erDiagram
 | `usuarios` | Quienes entran al sistema | `usuario` es único. `activo` permite dar de baja sin borrar. |
 | `clientes` | Clientes registrados | El 1 es "Público general" y es de paso. |
 | `vehiculos` | Vehículos de cada cliente | La matrícula es la llave. Un vehículo nuevo se liga al cliente 1. |
-| `servicios` | Cada entrada y salida | Con `fecha_salida` en NULL el vehículo sigue dentro. |
+| `servicios` | Catálogo de servicios disponibles | 1 = "Estancia por hora", 2 = "Pensión mensual". |
+| `detalle_servicios` | Registro de servicios aplicados a cada vehículo | Conecta `vehiculos` con `servicios` (M:N). `fecha_salida` NULL si sigue dentro. |
 | `pensiones` | Contrato por periodo para un vehículo | Con una pensión vigente no se cobra por hora. |
-| `cobros` | Pago de un servicio por hora **o** de una pensión | Un servicio o una pensión tiene a lo más un cobro. |
+| `cobros` | Recibo o ticket maestro | Registra el folio, cajero, monto total y fecha. |
+| `detalle_cobros` | Desglose del cobro por vehículo y concepto | Conecta `cobros` con `vehiculos` (M:N). Desglosa horas y monto de estancia o pensión. |
 | `precios` | Tarifa escalonada por tipo de cliente | Ver la tabla de abajo. |
 | `parametros` | Valores configurables (clave y valor) | `visitas_para_frecuente` y `periodo_dias_frecuente`. |
 
@@ -113,6 +132,7 @@ erDiagram
 | frecuente | 6 | NULL | 22.00 |
 
 **Clientes:** `id_cliente = 1`, "Público general", de paso.
+**Servicios:** `id_servicio = 1` ("Estancia por hora"), `id_servicio = 2` ("Pensión mensual").
 **Parámetros:** `visitas_para_frecuente = 10`, `periodo_dias_frecuente = 30`.
 
 ## Datos de prueba (`02_datos_prueba.sql`)
@@ -140,8 +160,8 @@ Si el vehículo tiene una pensión vigente (la fecha cae entre `fecha_inicio` y 
 - `fecha_salida` no puede ser anterior a `fecha_entrada`.
 - `fecha_fin` de una pensión no puede ser anterior a `fecha_inicio`.
 - Los montos no pueden ser negativos.
-- Un cobro es de un servicio **o** de una pensión, nunca de los dos.
-- Un servicio o una pensión se cobra una sola vez.
+- Un detalle de cobro es de un servicio **o** de una pensión, nunca de los dos (`ck_detalle_cobros_origen`).
+- Un detalle de servicio o pensión se cobra una sola vez (`UNIQUE`).
 
 ## Pendiente de implementar
 
@@ -152,10 +172,10 @@ Si el vehículo tiene una pensión vigente (la fecha cae entre `fecha_inicio` y 
 
 | Requisito | Fuente |
 |---|---|
-| 7. Entradas y salidas por mes | `servicios` (agrupado por mes de `fecha_entrada` y `fecha_salida`) |
-| 8. Meses con mayor demanda por año | `servicios` (conteo por año y mes) |
-| 9. Horarios con mayor demanda por año | `servicios` (conteo por año y hora de entrada) |
-| 10. Ingresos por servicio por año | `cobros` (suma de `monto` por año, separando cobros de servicio y de pensión) |
+| 7. Entradas y salidas por mes | `detalle_servicios` (agrupado por mes de `fecha_entrada` y `fecha_salida`) |
+| 8. Meses con mayor demanda por año | `detalle_servicios` (conteo por año y mes) |
+| 9. Horarios con mayor demanda por año | `detalle_servicios` (conteo por año y hora de entrada) |
+| 10. Ingresos por servicio por año | `detalle_cobros` junto con `cobros` y `servicios` (suma de `monto` por año agrupado por `nombre_servicio`) |
 
 ## Pendientes de decisión
 
