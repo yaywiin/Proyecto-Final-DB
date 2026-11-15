@@ -19,6 +19,45 @@ CAMPO = "#1f2937"
 DORADO = "#d4af37"
 TEXTO = "#f3f4f6"
 TEXTO_SUAVE = "#9ca3af"
+PLACEHOLDER = "#6b7280"
+
+
+class EntryConPlaceholder(tk.Entry):
+    """Entry con un texto de ejemplo en gris.
+
+    El ejemplo es una etiqueta encima del campo, así que nunca entra en la
+    variable: un campo vacío sigue valiendo "".
+    """
+
+    def __init__(self, padre, variable, ejemplo, **opciones):
+        super().__init__(padre, textvariable=variable, **opciones)
+        self._variable = variable
+        self._ejemplo = tk.Label(
+            self, text=ejemplo, bg=CAMPO, fg=PLACEHOLDER, font=opciones.get("font"), cursor="xterm",
+        )
+        self._ejemplo.place(x=2, rely=0.5, anchor=tk.W)
+        self._ejemplo.bind("<Button-1>", lambda e: self.focus_set())
+        self._variable.trace_add("write", lambda *_: self._actualizar())
+        self.bind("<FocusIn>", lambda e: self._actualizar(enfocado=True), add="+")
+        self.bind("<FocusOut>", lambda e: self._actualizar(enfocado=False), add="+")
+        self._actualizar()
+
+    def configure(self, cnf=None, **opciones):
+        resultado = super().configure(cnf, **opciones)
+        if hasattr(self, "_ejemplo"):
+            self._actualizar()
+        return resultado
+
+    config = configure
+
+    def _actualizar(self, enfocado=None):
+        if enfocado is None:
+            enfocado = self.focus_get() is self
+        visible = not self._variable.get() and not enfocado and str(self.cget("state")) == "normal"
+        if visible:
+            self._ejemplo.place(x=2, rely=0.5, anchor=tk.W)
+        else:
+            self._ejemplo.place_forget()
 
 
 def abrir_entrada_salida(parent, usuario):
@@ -63,9 +102,9 @@ class VentanaEntradaSalida:
     def _etiqueta(self, padre, texto):
         tk.Label(padre, text=texto, bg=PANEL, fg=TEXTO_SUAVE, font=("Segoe UI", 8)).pack(anchor=tk.W)
 
-    def _campo(self, padre, variable):
-        entry = tk.Entry(
-            padre, textvariable=variable, bg=CAMPO, fg=TEXTO, insertbackground=TEXTO,
+    def _campo(self, padre, variable, ejemplo):
+        entry = EntryConPlaceholder(
+            padre, variable, ejemplo, bg=CAMPO, fg=TEXTO, insertbackground=TEXTO,
             relief=tk.FLAT, font=("Segoe UI", 10),
         )
         entry.pack(fill=tk.X, ipady=4, pady=(2, 10))
@@ -95,7 +134,7 @@ class VentanaEntradaSalida:
         form.pack_propagate(False)
 
         self._etiqueta(form, "Matrícula")
-        self.entry_matricula = self._campo(form, self.var_matricula)
+        self.entry_matricula = self._campo(form, self.var_matricula, "Ej. ABC1234")
         self.entry_matricula.bind("<Return>", lambda e: self._verificar_vehiculo())
         self.entry_matricula.bind("<FocusOut>", lambda e: self._verificar_vehiculo())
         self.entry_matricula.bind("<KeyRelease>", self._al_escribir_matricula)
@@ -110,11 +149,11 @@ class VentanaEntradaSalida:
         self.combo_cliente.pack(fill=tk.X, ipady=3, pady=(2, 10))
 
         self._etiqueta(form, "Marca")
-        self.entry_marca = self._campo(form, self.var_marca)
+        self.entry_marca = self._campo(form, self.var_marca, "Ej. Nissan")
         self._etiqueta(form, "Modelo")
-        self.entry_modelo = self._campo(form, self.var_modelo)
+        self.entry_modelo = self._campo(form, self.var_modelo, "Ej. Versa")
         self._etiqueta(form, "Color")
-        self.entry_color = self._campo(form, self.var_color)
+        self.entry_color = self._campo(form, self.var_color, "Ej. Rojo")
 
         self._boton(form, "Registrar entrada", self._registrar_entrada, dorado=True).pack(fill=tk.X, pady=(4, 6))
         self._boton(form, "Registrar salida", self._registrar_salida).pack(fill=tk.X)
