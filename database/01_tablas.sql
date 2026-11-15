@@ -54,26 +54,45 @@ CREATE TABLE vehiculos (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- SERVICIOS: cada entrada/salida de un vehículo
--- fecha_salida es NULL mientras el vehículo sigue dentro
+-- SERVICIOS: catálogo de servicios que ofrece el estacionamiento
+-- (estancia por hora, pensión mensual, lavado, etc.)
 -- ---------------------------------------------------------------------
 CREATE TABLE servicios (
-  id_servicio   INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  matricula     VARCHAR(15)  NOT NULL,
-  id_usuario    INT UNSIGNED NOT NULL,
-  fecha_entrada DATETIME     NOT NULL,
-  fecha_salida  DATETIME     NULL,
+  id_servicio     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nombre_servicio VARCHAR(50)  NOT NULL,
+  descripcion     VARCHAR(255) NULL,
+  activo          TINYINT(1)   NOT NULL DEFAULT 1,
   PRIMARY KEY (id_servicio),
-  KEY idx_servicios_matricula (matricula),
-  KEY idx_servicios_usuario (id_usuario),
-  KEY idx_servicios_entrada (fecha_entrada),
-  CONSTRAINT fk_servicios_vehiculo
+  UNIQUE KEY uq_servicios_nombre (nombre_servicio)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- DETALLE_SERVICIOS: registro de cada servicio brindado a un vehículo
+-- Tabla intermedia/detalle que conecta VEHICULOS con SERVICIOS (relación M:N)
+-- fecha_salida es NULL mientras el vehículo sigue dentro
+-- ---------------------------------------------------------------------
+CREATE TABLE detalle_servicios (
+  id_detalle_servicio INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  matricula           VARCHAR(15)  NOT NULL,
+  id_servicio         INT UNSIGNED NOT NULL,
+  id_usuario          INT UNSIGNED NOT NULL,
+  fecha_entrada       DATETIME     NOT NULL,
+  fecha_salida        DATETIME     NULL,
+  PRIMARY KEY (id_detalle_servicio),
+  KEY idx_detalle_servicios_matricula (matricula),
+  KEY idx_detalle_servicios_servicio (id_servicio),
+  KEY idx_detalle_servicios_usuario (id_usuario),
+  KEY idx_detalle_servicios_entrada (fecha_entrada),
+  CONSTRAINT fk_detalle_servicios_vehiculo
     FOREIGN KEY (matricula) REFERENCES vehiculos (matricula)
     ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT fk_servicios_usuario
+  CONSTRAINT fk_detalle_servicios_servicio
+    FOREIGN KEY (id_servicio) REFERENCES servicios (id_servicio)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_detalle_servicios_usuario
     FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
     ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT ck_servicios_fechas
+  CONSTRAINT ck_detalle_servicios_fechas
     CHECK (fecha_salida IS NULL OR fecha_salida >= fecha_entrada)
 ) ENGINE=InnoDB;
 
@@ -106,36 +125,57 @@ CREATE TABLE pensiones (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- COBROS: pago de un servicio por hora O de una pensión (uno solo)
--- UNIQUE en cada FK: un servicio o pensión tiene a lo más un cobro.
+-- COBROS: recibo o ticket de pago (Maestro)
 -- ---------------------------------------------------------------------
 CREATE TABLE cobros (
   id_cobro       INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  id_servicio    INT UNSIGNED  NULL,
-  id_pension     INT UNSIGNED  NULL,
   id_usuario     INT UNSIGNED  NOT NULL,
-  horas_cobradas DECIMAL(6,2)  NULL,
-  monto          DECIMAL(10,2) NOT NULL,
+  monto_total    DECIMAL(10,2) NOT NULL,
   fecha_cobro    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_cobro),
-  UNIQUE KEY uq_cobros_servicio (id_servicio),
-  UNIQUE KEY uq_cobros_pension (id_pension),
   KEY idx_cobros_usuario (id_usuario),
   KEY idx_cobros_fecha (fecha_cobro),
-  CONSTRAINT fk_cobros_servicio
-    FOREIGN KEY (id_servicio) REFERENCES servicios (id_servicio)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
-  CONSTRAINT fk_cobros_pension
-    FOREIGN KEY (id_pension) REFERENCES pensiones (id_pension)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_cobros_usuario
     FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
     ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT ck_cobros_origen CHECK (
-    (id_servicio IS NOT NULL AND id_pension IS NULL) OR
-    (id_servicio IS NULL AND id_pension IS NOT NULL)
+  CONSTRAINT ck_cobros_monto_total CHECK (monto_total >= 0)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- DETALLE_COBROS: desglose de cobro por vehículo y concepto (Detalle)
+-- Tabla intermedia que conecta COBROS con VEHICULOS (relación M:N)
+-- Puede cobrar un detalle_servicio (estancia) O una pensión (uno solo)
+-- ---------------------------------------------------------------------
+CREATE TABLE detalle_cobros (
+  id_detalle_cobro    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  id_cobro            INT UNSIGNED  NOT NULL,
+  matricula           VARCHAR(15)   NOT NULL,
+  id_detalle_servicio INT UNSIGNED  NULL,
+  id_pension          INT UNSIGNED  NULL,
+  horas_cobradas      DECIMAL(6,2)  NULL,
+  monto               DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (id_detalle_cobro),
+  UNIQUE KEY uq_detalle_cobros_servicio (id_detalle_servicio),
+  UNIQUE KEY uq_detalle_cobros_pension (id_pension),
+  KEY idx_detalle_cobros_cobro (id_cobro),
+  KEY idx_detalle_cobros_matricula (matricula),
+  CONSTRAINT fk_detalle_cobros_cobro
+    FOREIGN KEY (id_cobro) REFERENCES cobros (id_cobro)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_detalle_cobros_vehiculo
+    FOREIGN KEY (matricula) REFERENCES vehiculos (matricula)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_detalle_cobros_servicio
+    FOREIGN KEY (id_detalle_servicio) REFERENCES detalle_servicios (id_detalle_servicio)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT fk_detalle_cobros_pension
+    FOREIGN KEY (id_pension) REFERENCES pensiones (id_pension)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT ck_detalle_cobros_origen CHECK (
+    (id_detalle_servicio IS NOT NULL AND id_pension IS NULL) OR
+    (id_detalle_servicio IS NULL AND id_pension IS NOT NULL)
   ),
-  CONSTRAINT ck_cobros_monto CHECK (monto >= 0)
+  CONSTRAINT ck_detalle_cobros_monto CHECK (monto >= 0)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -169,6 +209,11 @@ CREATE TABLE parametros (
 -- Cliente genérico para los clientes de paso
 INSERT INTO clientes (id_cliente, nombre, tipo_cliente)
 VALUES (1, 'Público general', 'paso');
+
+-- Catálogo de servicios disponibles
+INSERT INTO servicios (id_servicio, nombre_servicio, descripcion) VALUES
+  (1, 'Estancia por hora', 'Estacionamiento por cajón con tarifa proporcional'),
+  (2, 'Pensión mensual',   'Cajón contratado por periodo fijo');
 
 -- Tarifa escalonada: primeras 5 h y de la 6ª en adelante
 INSERT INTO precios (tipo_cliente, hora_desde, hora_hasta, precio_hora) VALUES
