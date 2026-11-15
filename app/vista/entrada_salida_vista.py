@@ -149,7 +149,9 @@ class VentanaEntradaSalida:
         ).pack(anchor=tk.W, pady=(0, 10))
 
         self._etiqueta(form, "Cliente (solo si el vehículo es nuevo)")
-        self.combo_cliente = ttk.Combobox(form, textvariable=self.var_cliente, state="readonly")
+        self.combo_cliente = ttk.Combobox(
+            form, textvariable=self.var_cliente, state="readonly", postcommand=self._cargar_clientes,
+        )
         self.combo_cliente.pack(fill=tk.X, ipady=3, pady=(2, 10))
 
         self._etiqueta(form, "Marca")
@@ -207,6 +209,8 @@ class VentanaEntradaSalida:
             entry.config(state=estado)
 
     def _cargar_clientes(self):
+        """Lee los clientes de la base. También se llama al desplegar la lista."""
+        elegido = self.var_cliente.get()
         try:
             filas = controlador.clientes_disponibles()
         except ErrorBD as error:
@@ -214,7 +218,9 @@ class VentanaEntradaSalida:
             return
         self.clientes = {f"{f['nombre']} (#{f['id_cliente']})": f["id_cliente"] for f in filas}
         self.combo_cliente["values"] = list(self.clientes)
-        if self.clientes:
+        if elegido in self.clientes:
+            self.var_cliente.set(elegido)
+        elif self.clientes:
             self.var_cliente.set(next(iter(self.clientes)))
 
     def _actualizar_lista(self):
