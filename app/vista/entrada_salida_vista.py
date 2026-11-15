@@ -111,13 +111,17 @@ class VentanaEntradaSalida:
         return entry
 
     def _boton(self, padre, texto, comando, dorado=False):
-        return tk.Button(
-            padre, text=texto, command=comando, relief=tk.FLAT, cursor="hand2",
-            font=("Segoe UI", 10, "bold"), padx=12, pady=6,
-            bg=DORADO if dorado else CAMPO, fg=FONDO if dorado else TEXTO,
-            activebackground="#e5c158" if dorado else "#374151",
-            activeforeground=FONDO if dorado else TEXTO,
+        """Botón hecho con Label: en macOS los tk.Button ignoran los colores."""
+        fondo, hover = (DORADO, "#e5c158") if dorado else (CAMPO, "#374151")
+        color = FONDO if dorado else TEXTO
+        boton = tk.Label(
+            padre, text=texto, bg=fondo, fg=color, font=("Segoe UI", 10, "bold"),
+            padx=12, pady=8, cursor="hand2",
         )
+        boton.bind("<Button-1>", lambda e: comando())
+        boton.bind("<Enter>", lambda e: boton.config(bg=hover))
+        boton.bind("<Leave>", lambda e: boton.config(bg=fondo))
+        return boton
 
     def _crear_widgets(self):
         tk.Label(
