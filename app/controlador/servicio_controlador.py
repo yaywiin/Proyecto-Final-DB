@@ -65,17 +65,39 @@ def registrar_entrada(matricula, id_usuario, id_cliente=None, marca=None, modelo
     return {"matricula": matricula, "vehiculo_nuevo": vehiculo_nuevo is not None}
 
 
-def registrar_salida(matricula):
-    """Registra la salida del vehículo. Devuelve matrícula y fecha de salida."""
+def previsualizar_salida(matricula):
+    """Calcula lo que se va a cobrar, sin guardar nada.
+
+    La hora de salida queda fijada aquí: es la misma que se guarda al confirmar,
+    así el monto no cambia aunque el cobrador tarde en cobrar.
+    """
     matricula = normalizar_matricula(matricula)
 
     entrada = modelo.buscar_entrada_abierta(matricula)
     if entrada is None:
         raise ErrorServicio(f"El vehículo {matricula} no tiene una entrada abierta.")
 
-    fecha_salida = modelo.registrar_salida(entrada["id_detalle_servicio"])
-    return {
-        "matricula": matricula,
-        "fecha_entrada": entrada["fecha_entrada"],
-        "fecha_salida": fecha_salida,
-    }
+    fecha_salida = modelo.hora_actual()
+    cobro = modelo.calcular_cobro(entrada["id_detalle_servicio"], fecha_salida)
+    cobro["fecha_salida"] = fecha_salida
+    return cobro
+
+
+def confirmar_salida(cobro, id_usuario):
+    """Guarda la salida y el cobro calculados en `previsualizar_salida`. Devuelve el id del cobro."""
+    id_cobro = modelo.guardar_salida_con_cobro(
+        cobro["id_detalle_servicio"],
+        cobro["matricula"],
+        id_usuario,
+        cobro["fecha_salida"],
+        cobro["horas_cobradas"],
+        cobro["monto"],
+    )
+    if id_cobro is None:
+        raise ErrorServicio(f"La salida de {cobro['matricula']} ya estaba registrada.")
+    return id_cobro
+
+
+def formatear_tiempo(minutos):
+    horas, resto = divmod(int(minutos), 60)
+    return f"{horas} h {resto:02d} min" if horas else f"{resto} min"

@@ -312,9 +312,23 @@ class VentanaEntradaSalida:
 
     def _registrar_salida(self):
         try:
-            resultado = controlador.registrar_salida(self.var_matricula.get())
+            cobro = controlador.previsualizar_salida(self.var_matricula.get())
         except ErrorServicio as error:
             messagebox.showwarning("Salida", str(error), parent=self.ventana)
+            return
+        except ErrorBD as error:
+            messagebox.showerror("Base de datos", str(error), parent=self.ventana)
+            return
+
+        if not CuadroCobro(self.ventana, cobro).confirmado:
+            self.var_estado.set(f"Salida de {cobro['matricula']} cancelada.")
+            return
+
+        try:
+            controlador.confirmar_salida(cobro, self.id_usuario)
+        except ErrorServicio as error:
+            messagebox.showwarning("Salida", str(error), parent=self.ventana)
+            self._actualizar_lista()
             return
         except ErrorBD as error:
             messagebox.showerror("Base de datos", str(error), parent=self.ventana)
@@ -323,6 +337,76 @@ class VentanaEntradaSalida:
         self._actualizar_lista()
         self._limpiar_formulario()
         self.var_estado.set(
-            f"Salida registrada: {resultado['matricula']} a las "
-            f"{resultado['fecha_salida'].strftime('%H:%M')}."
+            f"Cobro registrado: {cobro['matricula']}, ${cobro['monto']:,.2f}."
         )
+
+
+class CuadroCobro:
+    """Ventana modal con el detalle del cobro. `confirmado` dice si se presionó Cobrar."""
+
+    def __init__(self, parent, cobro):
+        self.confirmado = False
+        self.ventana = tk.Toplevel(parent)
+        self.ventana.title("Cobro")
+        self.ventana.configure(bg=FONDO)
+        self.ventana.resizable(False, False)
+        self.ventana.transient(parent)
+
+        panel = tk.Frame(self.ventana, bg=PANEL, padx=28, pady=22)
+        panel.pack(padx=24, pady=24)
+
+        tk.Label(
+            panel, text=cobro["matricula"], bg=PANEL, fg=TEXTO, font=("Segoe UI", 16, "bold"),
+        ).pack(anchor=tk.W)
+        tk.Label(
+            panel, text=f"{cobro['cliente']}  •  {cobro['motivo']}", bg=PANEL, fg=TEXTO_SUAVE,
+            font=("Segoe UI", 9),
+        ).pack(anchor=tk.W, pady=(0, 14))
+
+        for titulo, valor in (
+            ("Entrada", cobro["fecha_entrada"].strftime("%d/%m/%Y %H:%M")),
+            ("Salida", cobro["fecha_salida"].strftime("%d/%m/%Y %H:%M")),
+            ("Tiempo", controlador.formatear_tiempo(cobro["minutos_estancia"])),
+        ):
+            fila = tk.Frame(panel, bg=PANEL)
+            fila.pack(fill=tk.X, pady=2)
+            tk.Label(fila, text=titulo, bg=PANEL, fg=TEXTO_SUAVE, font=("Segoe UI", 9)).pack(side=tk.LEFT)
+            tk.Label(fila, text=valor, bg=PANEL, fg=TEXTO, font=("Segoe UI", 9)).pack(side=tk.RIGHT)
+
+        tk.Label(
+            panel, text="TOTAL A COBRAR", bg=PANEL, fg=DORADO, font=("Segoe UI", 8, "bold"),
+        ).pack(anchor=tk.W, pady=(18, 0))
+        tk.Label(
+            panel, text=f"${cobro['monto']:,.2f}", bg=PANEL, fg=DORADO, font=("Segoe UI", 30, "bold"),
+        ).pack(anchor=tk.W, pady=(0, 16))
+
+        botones = tk.Frame(panel, bg=PANEL)
+        botones.pack(fill=tk.X)
+        for texto, comando, dorado in (("Cobrar", self._cobrar, True), ("Cancelar", self._cancelar, False)):
+            tk.Button(
+                botones, text=texto, command=comando, relief=tk.FLAT, cursor="hand2",
+                font=("Segoe UI", 10, "bold"), padx=14, pady=6,
+                bg=DORADO if dorado else CAMPO, fg=FONDO if dorado else TEXTO,
+                activebackground="#e5c158" if dorado else "#374151",
+                activeforeground=FONDO if dorado else TEXTO,
+            ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 8) if dorado else 0)
+
+        self.ventana.bind("<Return>", lambda e: self._cobrar())
+        self.ventana.bind("<Escape>", lambda e: self._cancelar())
+        self.ventana.protocol("WM_DELETE_WINDOW", self._cancelar)
+
+        self.ventana.update_idletasks()
+        x = parent.winfo_rootx() + (parent.winfo_width() - self.ventana.winfo_width()) // 2
+        y = parent.winfo_rooty() + (parent.winfo_height() - self.ventana.winfo_height()) // 2
+        self.ventana.geometry(f"+{max(x, 0)}+{max(y, 0)}")
+
+        self.ventana.grab_set()
+        self.ventana.focus_force()
+        self.ventana.wait_window()
+
+    def _cobrar(self):
+        self.confirmado = True
+        self.ventana.destroy()
+
+    def _cancelar(self):
+        self.ventana.destroy()

@@ -75,16 +75,43 @@ def registrar_entrada(matricula, id_usuario, vehiculo_nuevo=None):
         return cursor.lastrowid
 
 
-def registrar_salida(id_detalle_servicio):
-    """Guarda la hora de salida. Devuelve la fecha registrada."""
+def hora_actual():
+    """Hora del servidor de base de datos, la misma que usan las entradas."""
+    return consultar("SELECT NOW() AS ahora")[0]["ahora"]
+
+
+def calcular_cobro(id_detalle_servicio, fecha_salida):
+    """Calcula el cobro con el procedimiento de la base, sin guardar nada.
+
+    Devuelve minutos, horas cobradas, tipo de cliente, si tiene pensión vigente,
+    el monto y el motivo.
+    """
     with transaccion() as cursor:
-        cursor.execute(
-            "UPDATE detalle_servicios SET fecha_salida = NOW() "
+        cursor.callproc("sp_calcular_cobro_servicio", (id_detalle_servicio, fecha_salida))
+        return cursor.fetchone()
+
+
+def guardar_salida_con_cobro(id_detalle_servicio, matricula, id_usuario, fecha_salida, horas, monto):
+    """Guarda la salida, el recibo y su desglose en una sola transacción.
+
+    Devuelve el id del cobro, o None si la estancia ya tenía salida.
+    """
+    with transaccion() as cursor:
+        cerradas = cursor.execute(
+            "UPDATE detalle_servicios SET fecha_salida = %s "
             "WHERE id_detalle_servicio = %s AND fecha_salida IS NULL",
-            (id_detalle_servicio,),
+            (fecha_salida, id_detalle_servicio),
         )
+        if cerradas == 0:
+            return None
         cursor.execute(
-            "SELECT fecha_salida FROM detalle_servicios WHERE id_detalle_servicio = %s",
-            (id_detalle_servicio,),
+            "INSERT INTO cobros (id_usuario, monto_total, fecha_cobro) VALUES (%s, %s, %s)",
+            (id_usuario, monto, fecha_salida),
         )
-        return cursor.fetchone()["fecha_salida"]
+        id_cobro = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO detalle_cobros (id_cobro, matricula, id_detalle_servicio, horas_cobradas, monto) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (id_cobro, matricula, id_detalle_servicio, horas, monto),
+        )
+        return id_cobro
