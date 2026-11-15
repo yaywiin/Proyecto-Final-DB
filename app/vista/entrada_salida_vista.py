@@ -102,10 +102,17 @@ class VentanaEntradaSalida:
     def _etiqueta(self, padre, texto):
         tk.Label(padre, text=texto, bg=PANEL, fg=TEXTO_SUAVE, font=("Segoe UI", 8)).pack(anchor=tk.W)
 
-    def _campo(self, padre, variable, ejemplo):
+    def _campo(self, padre, variable, ejemplo, limite=None):
+        opciones = {}
+        if limite:
+            # Al escribir o pegar, rechaza lo que pase del límite de caracteres
+            opciones = {
+                "validate": "key",
+                "validatecommand": (self.ventana.register(lambda texto: len(texto) <= limite), "%P"),
+            }
         entry = EntryConPlaceholder(
             padre, variable, ejemplo, bg=CAMPO, fg=TEXTO, insertbackground=TEXTO,
-            relief=tk.FLAT, font=("Segoe UI", 10),
+            relief=tk.FLAT, font=("Segoe UI", 10), **opciones,
         )
         entry.pack(fill=tk.X, ipady=4, pady=(2, 10))
         return entry
@@ -138,7 +145,7 @@ class VentanaEntradaSalida:
         form.pack_propagate(False)
 
         self._etiqueta(form, "Matrícula")
-        self.entry_matricula = self._campo(form, self.var_matricula, "Ej. ABC1234")
+        self.entry_matricula = self._campo(form, self.var_matricula, "Ej. ABC1234", limite=controlador.LONGITUD_MATRICULA)
         self.entry_matricula.bind("<Return>", lambda e: self._verificar_vehiculo())
         self.entry_matricula.bind("<FocusOut>", lambda e: self._verificar_vehiculo())
         self.entry_matricula.bind("<KeyRelease>", self._al_escribir_matricula)

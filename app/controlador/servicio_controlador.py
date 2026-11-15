@@ -6,7 +6,7 @@ con un mensaje listo para mostrar.
 
 from app.modelo import servicio_modelo as modelo
 
-LONGITUD_MATRICULA = 15
+LONGITUD_MATRICULA = 7
 
 
 class ErrorServicio(Exception):
