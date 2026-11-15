@@ -47,6 +47,7 @@ class VentanaEntradaSalida:
         self.var_color = tk.StringVar()
         self.var_estado = tk.StringVar(value="Escribe una matrícula y presiona Enter.")
         self.clientes = {}
+        self._pendiente = None
 
         self._crear_widgets()
         self._cargar_clientes()
@@ -97,6 +98,7 @@ class VentanaEntradaSalida:
         self.entry_matricula = self._campo(form, self.var_matricula)
         self.entry_matricula.bind("<Return>", lambda e: self._verificar_vehiculo())
         self.entry_matricula.bind("<FocusOut>", lambda e: self._verificar_vehiculo())
+        self.entry_matricula.bind("<KeyRelease>", self._al_escribir_matricula)
 
         tk.Label(
             form, textvariable=self.var_estado, bg=PANEL, fg=DORADO, justify=tk.LEFT,
@@ -104,7 +106,7 @@ class VentanaEntradaSalida:
         ).pack(anchor=tk.W, pady=(0, 10))
 
         self._etiqueta(form, "Cliente (solo si el vehículo es nuevo)")
-        self.combo_cliente = ttk.Combobox(form, textvariable=self.var_cliente, state="disabled")
+        self.combo_cliente = ttk.Combobox(form, textvariable=self.var_cliente, state="readonly")
         self.combo_cliente.pack(fill=tk.X, ipady=3, pady=(2, 10))
 
         self._etiqueta(form, "Marca")
@@ -116,7 +118,7 @@ class VentanaEntradaSalida:
 
         self._boton(form, "Registrar entrada", self._registrar_entrada, dorado=True).pack(fill=tk.X, pady=(4, 6))
         self._boton(form, "Registrar salida", self._registrar_salida).pack(fill=tk.X)
-        self._habilitar_datos_nuevo(False)
+        self._habilitar_datos_nuevo(True)
 
         # Panel derecho: vehículos dentro
         lista = tk.Frame(cuerpo, bg=PANEL, padx=18, pady=16)
@@ -186,6 +188,12 @@ class VentanaEntradaSalida:
             )
         self.lbl_total.config(text=f"{len(filas)} vehículo(s)")
 
+    def _al_escribir_matricula(self, _evento):
+        """Comprueba la matrícula poco después de dejar de escribir."""
+        if self._pendiente:
+            self.ventana.after_cancel(self._pendiente)
+        self._pendiente = self.ventana.after(400, self._verificar_vehiculo)
+
     def _al_seleccionar(self, _evento):
         seleccion = self.tabla.selection()
         if seleccion:
@@ -194,13 +202,16 @@ class VentanaEntradaSalida:
 
     def _verificar_vehiculo(self):
         """Dice si la matrícula ya está registrada y pide datos solo si es nueva."""
+        self._pendiente = None
         if not self.var_matricula.get().strip():
+            self.var_estado.set("Escribe una matrícula y presiona Enter.")
+            self._habilitar_datos_nuevo(True)
             return None
         try:
             vehiculo = controlador.consultar_vehiculo(self.var_matricula.get())
         except ErrorServicio as error:
             self.var_estado.set(str(error))
-            self._habilitar_datos_nuevo(False)
+            self._habilitar_datos_nuevo(True)
             return None
         except ErrorBD as error:
             messagebox.showerror("Base de datos", str(error), parent=self.ventana)
@@ -217,7 +228,7 @@ class VentanaEntradaSalida:
     def _limpiar_formulario(self):
         for variable in (self.var_matricula, self.var_marca, self.var_modelo, self.var_color):
             variable.set("")
-        self._habilitar_datos_nuevo(False)
+        self._habilitar_datos_nuevo(True)
         self.var_estado.set("Escribe una matrícula y presiona Enter.")
         self.entry_matricula.focus()
 
