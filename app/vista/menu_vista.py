@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 NOMBRE_SISTEMA = "CYC PARKING"
-SUBTITULO_SISTEMA = "EXECUTIVE & VIP PARKING"
+SUBTITULO_SISTEMA = "Sistema de Gestión de Estacionamiento"
 
 
 class VentanaMenu:
