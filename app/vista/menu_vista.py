@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 
+from app.vista.entrada_salida_vista import abrir_entrada_salida
+
 NOMBRE_SISTEMA = "CYC PARKING"
 SUBTITULO_SISTEMA = "EXECUTIVE & VIP PARKING"
 
@@ -142,6 +144,9 @@ class VentanaMenu:
         rejilla.columnconfigure(1, weight=1)
 
     def abrir_modulo(self, modulo):
+        if modulo == "Entradas y Salidas":
+            abrir_entrada_salida(self.root, self.usuario)
+            return
         messagebox.showinfo(modulo, f"Módulo seleccionado: {modulo}")
 
     def cerrar_sesion(self):
