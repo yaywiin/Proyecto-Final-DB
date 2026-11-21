@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 from app.vista.entrada_salida_vista import abrir_entrada_salida
+from app.vista.cliente_vehiculo_vista import abrir_clientes_vehiculos
 
 NOMBRE_SISTEMA = "CYC PARKING"
 SUBTITULO_SISTEMA = "EXECUTIVE & VIP PARKING"
@@ -146,6 +147,12 @@ class VentanaMenu:
     def abrir_modulo(self, modulo):
         if modulo == "Entradas y Salidas":
             abrir_entrada_salida(self.root, self.usuario)
+            return
+        if modulo == "Clientes":
+            abrir_clientes_vehiculos(self.root, self.usuario, pestana="clientes")
+            return
+        if modulo == "Vehículos":
+            abrir_clientes_vehiculos(self.root, self.usuario, pestana="vehiculos")
             return
         messagebox.showinfo(modulo, f"Módulo seleccionado: {modulo}")
 
