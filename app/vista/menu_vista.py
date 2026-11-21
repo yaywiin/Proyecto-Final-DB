@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 from app.vista.entrada_salida_vista import abrir_entrada_salida
+from app.vista.usuario_vista import abrir_usuarios
 
 NOMBRE_SISTEMA = "CYC PARKING"
 SUBTITULO_SISTEMA = "EXECUTIVE & VIP PARKING"
@@ -146,6 +147,17 @@ class VentanaMenu:
     def abrir_modulo(self, modulo):
         if modulo == "Entradas y Salidas":
             abrir_entrada_salida(self.root, self.usuario)
+            return
+        if modulo == "Usuarios":
+            rol = str(self.usuario.get("rol", self.usuario.get("perfil", "cobrador"))).lower()
+            if rol != "admin":
+                messagebox.showwarning(
+                    "Acceso restringido",
+                    "Solo el administrador puede gestionar usuarios.",
+                    parent=self.root,
+                )
+                return
+            abrir_usuarios(self.root, self.usuario)
             return
         messagebox.showinfo(modulo, f"Módulo seleccionado: {modulo}")
 
