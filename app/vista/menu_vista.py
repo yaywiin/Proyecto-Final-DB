@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 
+from app.controlador.permisos import filtrar_modulos, obtener_rol, tiene_permiso
 from app.vista.entrada_salida_vista import abrir_entrada_salida
 
 NOMBRE_SISTEMA = "CYC PARKING"
@@ -64,7 +65,7 @@ class VentanaMenu:
         btn_salir.pack(side=tk.RIGHT)
 
         nombre = self.usuario.get("nombre", "Usuario")
-        perfil = self.usuario.get("perfil", "cobrador").upper()
+        perfil = obtener_rol(self.usuario).upper()
 
         tk.Label(
             barra,
@@ -99,7 +100,9 @@ class VentanaMenu:
             ("Reportes", "Métricas de ocupación e ingresos"),
         ]
 
-        for i, (titulo, desc) in enumerate(modulos):
+        modulos_visibles = filtrar_modulos(self.usuario, modulos)
+
+        for i, (titulo, desc) in enumerate(modulos_visibles):
             fila = i // 2
             col = i % 2
 
@@ -144,6 +147,13 @@ class VentanaMenu:
         rejilla.columnconfigure(1, weight=1)
 
     def abrir_modulo(self, modulo):
+        if not tiene_permiso(self.usuario, modulo):
+            messagebox.showwarning(
+                "Acceso restringido",
+                f"Tu perfil no tiene permiso para acceder a {modulo}.",
+                parent=self.root,
+            )
+            return
         if modulo == "Entradas y Salidas":
             abrir_entrada_salida(self.root, self.usuario)
             return
