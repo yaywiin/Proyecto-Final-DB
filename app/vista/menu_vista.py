@@ -17,13 +17,13 @@ class VentanaMenu:
         self.usuario = usuario
         self.al_cerrar_sesion = al_cerrar_sesion
 
-        self.configurar_ventana(780, 520)
+        self.configurar_ventana(920, 640)
         self.crear_widgets()
 
     def configurar_ventana(self, ancho, alto):
         self.root.title(f"{NOMBRE_SISTEMA} - Menú Principal")
-        x = (self.root.winfo_screenwidth() // 2) - (ancho // 2)
-        y = (self.root.winfo_screenheight() // 2) - (alto // 2)
+        x = max(0, (self.root.winfo_screenwidth() // 2) - (ancho // 2))
+        y = max(0, (self.root.winfo_screenheight() // 2) - (alto // 2))
         self.root.geometry(f"{ancho}x{alto}+{x}+{y}")
         self.root.configure(bg="#0b0f19")  # Fondo negro azulado de alta gama
         self.root.resizable(False, False)
@@ -146,8 +146,8 @@ class VentanaMenu:
                 anchor="w",
             ).pack(fill=tk.X, pady=(5, 0))
 
-        rejilla.columnconfigure(0, weight=1)
-        rejilla.columnconfigure(1, weight=1)
+        rejilla.columnconfigure(0, weight=1, uniform="col")
+        rejilla.columnconfigure(1, weight=1, uniform="col")
 
     def abrir_modulo(self, modulo):
         if not tiene_permiso(self.usuario, modulo):
