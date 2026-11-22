@@ -4,6 +4,7 @@ from tkinter import messagebox
 from app.vista.entrada_salida_vista import abrir_entrada_salida
 from app.vista.reportes_vista import abrir_reportes
 from app.vista.usuario_vista import abrir_usuarios
+from app.vista.cliente_vehiculo_vista import abrir_clientes_vehiculos
 
 NOMBRE_SISTEMA = "CYC PARKING"
 SUBTITULO_SISTEMA = "Sistema de Gestión de Estacionamiento"
@@ -148,6 +149,12 @@ class VentanaMenu:
     def abrir_modulo(self, modulo):
         if modulo == "Entradas y Salidas":
             abrir_entrada_salida(self.root, self.usuario)
+            return
+        if modulo == "Clientes":
+            abrir_clientes_vehiculos(self.root, self.usuario, pestana="clientes")
+            return
+        if modulo == "Vehículos":
+            abrir_clientes_vehiculos(self.root, self.usuario, pestana="vehiculos")
             return
         if modulo == "Reportes":
             abrir_reportes(self.root, self.usuario)
