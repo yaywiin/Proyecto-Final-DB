@@ -5,7 +5,7 @@ from app.vista.entrada_salida_vista import abrir_entrada_salida
 from app.vista.reportes_vista import abrir_reportes
 
 NOMBRE_SISTEMA = "CYC PARKING"
-SUBTITULO_SISTEMA = "EXECUTIVE & VIP PARKING"
+SUBTITULO_SISTEMA = "Sistema de Gestión de Estacionamiento"
 
 
 class VentanaMenu:
