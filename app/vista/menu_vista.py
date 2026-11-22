@@ -2,10 +2,11 @@ import tkinter as tk
 from tkinter import messagebox
 
 from app.vista.entrada_salida_vista import abrir_entrada_salida
+from app.vista.reportes_vista import abrir_reportes
 from app.vista.usuario_vista import abrir_usuarios
 
 NOMBRE_SISTEMA = "CYC PARKING"
-SUBTITULO_SISTEMA = "EXECUTIVE & VIP PARKING"
+SUBTITULO_SISTEMA = "Sistema de Gestión de Estacionamiento"
 
 
 class VentanaMenu:
@@ -147,6 +148,9 @@ class VentanaMenu:
     def abrir_modulo(self, modulo):
         if modulo == "Entradas y Salidas":
             abrir_entrada_salida(self.root, self.usuario)
+            return
+        if modulo == "Reportes":
+            abrir_reportes(self.root, self.usuario)
             return
         if modulo == "Usuarios":
             rol = str(self.usuario.get("rol", self.usuario.get("perfil", "cobrador"))).lower()
