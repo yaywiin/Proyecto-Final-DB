@@ -10,7 +10,7 @@ Modelo final de la base de datos `estacionamiento` (MariaDB). Refleja los script
 | Cliente frecuente | Automático al llegar a 10 visitas en 30 días (valores en la tabla `parametros`) |
 | Clientes de paso | Cliente genérico `id_cliente = 1` "Público general" |
 | Contraseñas | Hash SHA-256 en hexadecimal (64 caracteres) |
-| Pensión | Por fecha y vehículo. Precio y % de descuento por definir |
+| Pensión | Por fecha y vehículo, por meses completos. Precio mensual y % de descuento (más de 2 años desde su primera pensión) en la tabla `parametros`; valores provisionales: $1,200.00 y 10% |
 | Tablas de detalle | Solicitadas por el profesor: `detalle_servicios` (entre vehículos y servicios) y `detalle_cobros` (entre vehículos y cobros) |
 
 ## Diagrama ER
@@ -118,7 +118,7 @@ erDiagram
 | `cobros` | Recibo o ticket maestro | Registra el folio, cajero, monto total y fecha. |
 | `detalle_cobros` | Desglose del cobro por vehículo y concepto | Conecta `cobros` con `vehiculos` (M:N). Desglosa horas y monto de estancia o pensión. |
 | `precios` | Tarifa escalonada por tipo de cliente | Ver la tabla de abajo. |
-| `parametros` | Valores configurables (clave y valor) | `visitas_para_frecuente` y `periodo_dias_frecuente`. |
+| `parametros` | Valores configurables (clave y valor) | `visitas_para_frecuente`, `periodo_dias_frecuente`, `precio_pension_mensual` y `descuento_pension_2anios`. |
 
 ## Datos base (los crea `01_tablas.sql`)
 
@@ -179,5 +179,5 @@ Si el vehículo tiene una pensión vigente (la fecha cae entre `fecha_inicio` y 
 
 ## Pendientes de decisión
 
-1. Pensión: modalidad, precio y % de descuento después de 2 años (hoy el precio de prueba es $1,200.00).
+1. Pensión: confirmar el precio mensual y el % de descuento después de 2 años (hoy provisionales: $1,200.00 y 10%).
 2. Qué significa "por cada 5 horas" para clientes frecuentes (pregunta al profesor).

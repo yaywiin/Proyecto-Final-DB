@@ -3,6 +3,7 @@ from tkinter import messagebox
 
 from app.controlador.permisos import filtrar_modulos, obtener_rol, tiene_permiso
 from app.vista.entrada_salida_vista import abrir_entrada_salida
+from app.vista.pensiones_vista import abrir_pensiones
 from app.vista.reportes_vista import abrir_reportes
 from app.vista.usuario_vista import abrir_usuarios
 from app.vista.cliente_vehiculo_vista import abrir_clientes_vehiculos
@@ -168,6 +169,9 @@ class VentanaMenu:
             return
         if modulo == "Reportes":
             abrir_reportes(self.root, self.usuario)
+            return
+        if modulo == "Pensiones":
+            abrir_pensiones(self.root, self.usuario)
             return
         if modulo == "Usuarios":
             rol = str(self.usuario.get("rol", self.usuario.get("perfil", "cobrador"))).lower()
