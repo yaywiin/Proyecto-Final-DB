@@ -1,34 +1,23 @@
 import hashlib
-
-USUARIOS_PRUEBA = {
-    "admin": {
-        "usuario_id": 1,
-        "nombre": "Administrador",
-        "email": "admin@estacionamiento.com",
-        "username": "admin",
-        "password": hashlib.sha256(b"admin123").hexdigest(),
-        "perfil": "admin",
-    },
-    "cobrador": {
-        "usuario_id": 2,
-        "nombre": "Cobrador Turno",
-        "email": "cobrador@estacionamiento.com",
-        "username": "cobrador",
-        "password": hashlib.sha256(b"cobrador123").hexdigest(),
-        "perfil": "cobrador",
-    },
-}
-
+from app.modelo.conexion import consultar
 
 def cifrar_password(texto):
     return hashlib.sha256(texto.encode("utf-8")).hexdigest()
 
-
 def autenticar_usuario(username, password):
-    usuario = USUARIOS_PRUEBA.get(username.strip())
-    if not usuario:
-        return None
+    """
+    Verifica las credenciales en la base de datos real.
+    Devuelve el diccionario del usuario si es exitoso, o None si falla.
+    """
+    username_limpio = username.strip()
+    password_cifrada = cifrar_password(password)
 
-    if usuario["password"] == cifrar_password(password):
-        return usuario
+    sql = "SELECT * FROM usuarios WHERE usuario = %s AND password = %s AND activo = 1"
+    
+    resultados = consultar(sql, (username_limpio, password_cifrada))
+
+
+    if resultados:
+        return resultados[0]
+    
     return None

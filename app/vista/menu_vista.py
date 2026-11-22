@@ -3,9 +3,12 @@ from tkinter import messagebox
 
 from app.controlador.permisos import filtrar_modulos, obtener_rol, tiene_permiso
 from app.vista.entrada_salida_vista import abrir_entrada_salida
+from app.vista.reportes_vista import abrir_reportes
+from app.vista.usuario_vista import abrir_usuarios
+from app.vista.cliente_vehiculo_vista import abrir_clientes_vehiculos
 
 NOMBRE_SISTEMA = "CYC PARKING"
-SUBTITULO_SISTEMA = "EXECUTIVE & VIP PARKING"
+SUBTITULO_SISTEMA = "Sistema de Gestión de Estacionamiento"
 
 
 class VentanaMenu:
@@ -156,6 +159,26 @@ class VentanaMenu:
             return
         if modulo == "Entradas y Salidas":
             abrir_entrada_salida(self.root, self.usuario)
+            return
+        if modulo == "Clientes":
+            abrir_clientes_vehiculos(self.root, self.usuario, pestana="clientes")
+            return
+        if modulo == "Vehículos":
+            abrir_clientes_vehiculos(self.root, self.usuario, pestana="vehiculos")
+            return
+        if modulo == "Reportes":
+            abrir_reportes(self.root, self.usuario)
+            return
+        if modulo == "Usuarios":
+            rol = str(self.usuario.get("rol", self.usuario.get("perfil", "cobrador"))).lower()
+            if rol != "admin":
+                messagebox.showwarning(
+                    "Acceso restringido",
+                    "Solo el administrador puede gestionar usuarios.",
+                    parent=self.root,
+                )
+                return
+            abrir_usuarios(self.root, self.usuario)
             return
         messagebox.showinfo(modulo, f"Módulo seleccionado: {modulo}")
 
