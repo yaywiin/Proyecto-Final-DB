@@ -32,7 +32,7 @@ def _dinero(valor):
 # Cada columna: (clave de la fila, título, ancho, alineación, formato)
 REPORTES = [
     {
-        "titulo": "7. Entradas y salidas por mes",
+        "titulo": "Entradas y salidas por mes",
         "leer": modelo.entradas_salidas_por_mes,
         "columnas": [
             ("anio", "Año", 70, "center", str),
@@ -43,7 +43,7 @@ REPORTES = [
         "totales": {"total_entradas": str, "total_salidas": str},
     },
     {
-        "titulo": "8. Meses con mayor demanda",
+        "titulo": "Meses con mayor demanda",
         "leer": modelo.meses_mayor_demanda,
         "columnas": [
             ("anio", "Año", 70, "center", str),
@@ -53,7 +53,7 @@ REPORTES = [
         "totales": {"total_vehiculos": str},
     },
     {
-        "titulo": "9. Horarios con mayor demanda",
+        "titulo": "Horarios con mayor demanda",
         "leer": modelo.horarios_mayor_demanda,
         "columnas": [
             ("anio", "Año", 70, "center", str),
@@ -63,7 +63,7 @@ REPORTES = [
         "totales": {"total_entradas": str},
     },
     {
-        "titulo": "10. Ingresos por servicio",
+        "titulo": "Ingresos por servicio",
         "leer": modelo.ingresos_por_servicio,
         "columnas": [
             ("anio", "Año", 70, "center", str),
