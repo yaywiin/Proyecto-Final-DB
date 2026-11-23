@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from app.controlador.login_controlador import autenticar_usuario
+from app.modelo.conexion import ErrorBD
 from app.vista.menu_vista import NOMBRE_SISTEMA, SUBTITULO_SISTEMA, VentanaMenu
 
 
@@ -153,7 +154,11 @@ class VentanaLogin:
             messagebox.showwarning("Aviso", "Complete los campos obligatorios.")
             return
 
-        usuario = autenticar_usuario(username, password)
+        try:
+            usuario = autenticar_usuario(username, password)
+        except ErrorBD as error:
+            messagebox.showerror("Base de datos", str(error))
+            return
         if not usuario:
             messagebox.showerror("Error", "Credenciales incorrectas.")
             return
