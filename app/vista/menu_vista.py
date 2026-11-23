@@ -158,7 +158,8 @@ class VentanaMenu:
                 parent=self.root,
             )
             return
-        if modulo == "Entradas y Salidas":
+        if modulo in ("Entradas y Salidas", "Cobros"):
+            # El cobro se hace al registrar la salida, en la misma ventana.
             abrir_entrada_salida(self.root, self.usuario)
             return
         if modulo == "Clientes":
