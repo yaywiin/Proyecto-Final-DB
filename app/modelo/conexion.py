@@ -38,6 +38,34 @@ _NO_SE_PUDO_CONECTAR = 2003
 _BASE_NO_EXISTE = 1049
 _ACCESO_DENEGADO = 1045
 
+# Errores que ocurren al ejecutar una sentencia (no al conectar).
+_TABLA_NO_EXISTE = 1146
+_RUTINA_NO_EXISTE = 1305
+_ERROR_DE_REGLA = 1644  # SIGNAL de un trigger o procedimiento: el mensaje ya está en español
+_LLAVE_DUPLICADA = 1062
+_CONEXION_PERDIDA = (2006, 2013)
+_RELACION_LLAVE_FORANEA = (1451, 1452)
+
+
+def _explicar(error):
+    """Convierte un error de MySQL/MariaDB en un mensaje que dice qué hacer."""
+    codigo = error.args[0] if error.args else None
+    detalle = error.args[1] if len(error.args) > 1 else str(error)
+    if codigo == _ERROR_DE_REGLA:
+        return detalle
+    if codigo in (_RUTINA_NO_EXISTE, _TABLA_NO_EXISTE):
+        return (
+            "A la base de datos le falta una parte. Vuelve a correr los scripts de database/ "
+            f"en orden (01 al 05). Detalle: {detalle}"
+        )
+    if codigo == _LLAVE_DUPLICADA:
+        return "Ese registro ya existe."
+    if codigo in _RELACION_LLAVE_FORANEA:
+        return "El registro está relacionado con otros datos y no se puede guardar o eliminar así."
+    if codigo in _CONEXION_PERDIDA:
+        return "Se perdió la conexión con MySQL. Revisa que siga encendido en XAMPP."
+    return f"Error de la base de datos ({codigo}): {detalle}"
+
 
 def obtener_conexion():
     """Abre una conexión nueva. Quien la pide es responsable de cerrarla."""
@@ -80,6 +108,9 @@ def transaccion():
         with conexion.cursor() as cursor:
             yield cursor
         conexion.commit()
+    except pymysql.err.MySQLError as error:
+        conexion.rollback()
+        raise ErrorBD(_explicar(error)) from error
     except Exception:
         conexion.rollback()
         raise
