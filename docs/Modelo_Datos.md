@@ -10,7 +10,7 @@ Modelo final de la base de datos `estacionamiento` (MariaDB). Refleja los script
 | Cliente frecuente | Automático al llegar a 10 visitas en 30 días (valores en la tabla `parametros`) |
 | Clientes de paso | Cliente genérico `id_cliente = 1` "Público general" |
 | Contraseñas | Hash SHA-256 en hexadecimal (64 caracteres) |
-| Pensión | Por fecha y vehículo, por meses completos. Precio mensual y % de descuento (más de 2 años desde su primera pensión) en la tabla `parametros`; valores provisionales: $1,200.00 y 10% |
+| Pensión | Por fecha y vehículo, por meses completos. Precio mensual y % de descuento (más de 2 años desde su primera pensión) en la tabla `parametros`: $1,200.00 y 10% |
 | Tablas de detalle | Solicitadas por el profesor: `detalle_servicios` (entre vehículos y servicios) y `detalle_cobros` (entre vehículos y cobros) |
 
 ## Diagrama ER
@@ -140,7 +140,7 @@ erDiagram
 - **Usuarios:** `admin` / `admin123` y `cobrador` / `cobrador123`.
 - 3 clientes (Público general, Ana López frecuente y Luis Pérez de paso), 6 vehículos.
 - 26 servicios cerrados entre noviembre de 2025 y octubre de 2026, con su cobro, y 1 servicio que sigue dentro.
-- 1 pensión de prueba (octubre de 2026, $1,200.00, valor provisional) con su cobro.
+- 1 pensión de prueba (octubre de 2026, $1,200.00) con su cobro.
 
 ## Regla de cobro (por hora)
 
@@ -163,10 +163,11 @@ Si el vehículo tiene una pensión vigente (la fecha cae entre `fecha_inicio` y 
 - Un detalle de cobro es de un servicio **o** de una pensión, nunca de los dos (`ck_detalle_cobros_origen`).
 - Un detalle de servicio o pensión se cobra una sola vez (`UNIQUE`).
 
-## Pendiente de implementar
+## Lo que hace la base por sí sola
 
-- Función de cobro (issue #6) y vistas de los reportes 7 a 10 (issue #7).
-- Trigger para que un cliente pase a frecuente al cumplir las visitas, y validar que un vehículo no tenga dos entradas abiertas (issue #11).
+- **Función y procedimiento de cobro** (`03_funcion_cobro.sql`): calculan el monto escalonado y proporcional, y dan $0.00 si hay pensión vigente.
+- **Vistas de los reportes 7 a 10** (`04_vistas.sql`), todas con la columna `anio` para filtrar.
+- **Triggers** (`05_triggers.sql`): evitan la doble entrada de un vehículo, pasan al cliente a frecuente al cumplir las visitas, impiden cobrar una estancia sin salida y validan que la salida no sea anterior a la entrada.
 
 ## Reportes y de dónde salen
 
@@ -179,5 +180,4 @@ Si el vehículo tiene una pensión vigente (la fecha cae entre `fecha_inicio` y 
 
 ## Pendientes de decisión
 
-1. Pensión: confirmar el precio mensual y el % de descuento después de 2 años (hoy provisionales: $1,200.00 y 10%).
-2. Qué significa "por cada 5 horas" para clientes frecuentes (pregunta al profesor).
+1. Qué significa "por cada 5 horas" para clientes frecuentes (pregunta al profesor). Hoy se aplica la tarifa escalonada: $26.00 las primeras 5 horas y $22.00 de la 6ª en adelante.

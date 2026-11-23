@@ -24,8 +24,8 @@ Entregar un sistema que cumpla los 10 requisitos del enunciado, con la base de d
 
 ### Perfiles
 
-- **Admin:** control operativo de todo el sistema (usuarios, clientes, vehículos, precios, pensiones y reportes).
-- **Cobrador:** solo registra vehículos, hora de entrada y salida y datos del cliente.
+- **Admin:** control operativo de todo el sistema (usuarios, clientes, vehículos, pensiones y reportes).
+- **Cobrador:** solo opera: registra entradas y salidas (con su cobro) y atiende clientes y vehículos. No ve Usuarios, Pensiones ni Reportes.
 
 Ambos entran con usuario y contraseña. La contraseña se guarda como hash SHA-256, nunca en texto plano.
 
@@ -33,7 +33,7 @@ Ambos entran con usuario y contraseña. La contraseña se guarda como hash SHA-2
 
 - Por defecto todos entran como **"Público general"** (`cliente_id = 1`) y pagan tarifa normal.
 - Quien quiera puede registrarse con sus datos.
-- Un cliente registrado se vuelve **frecuente** automáticamente al llegar a cierto número de visitas, y desde entonces paga la tarifa de frecuente.
+- Un cliente registrado se vuelve **frecuente** automáticamente al llegar a 10 visitas en 30 días (un trigger de la base lo hace), y desde entonces paga la tarifa de frecuente.
 - Las pensiones solo se pueden contratar con clientes registrados.
 
 ### Entrada y salida
@@ -57,7 +57,7 @@ Si el vehículo tiene una pensión vigente, no se cobra por hora.
 
 ### Pensión
 
-Se controla por fecha y por vehículo, y hay descuento para clientes con más de 2 años de pensión. El precio y el porcentaje de descuento todavía están por definir.
+Se controla por fecha y por vehículo, y solo la contrata el administrador, con clientes registrados. Se contrata por meses completos: **$1,200.00 por mes**, con **10% de descuento** si el cliente tiene más de 2 años desde su primera pensión. El precio y el descuento viven en la tabla `parametros`, así que se cambian sin tocar el programa. Un vehículo con pensión vigente sale con cobro de $0.00 y no se permiten pensiones que se traslapen.
 
 ### Reportes
 
@@ -70,7 +70,7 @@ Se controla por fecha y por vehículo, y hay descuento para clientes con más de
 
 ## Estructura de la base de datos
 
-Tablas: `Usuarios`, `Clientes`, `Vehiculos`, `Precios`, `Servicios`, `Cobros` y `Pensiones`. El detalle, el diagrama ER y las reglas de integridad están en [Modelo_Datos.md](docs/Modelo_Datos.md).
+Tablas: `usuarios`, `clientes`, `vehiculos`, `servicios` (catálogo), `detalle_servicios` (entradas y salidas), `pensiones`, `cobros` (recibo), `detalle_cobros` (desglose), `precios` y `parametros`. Además hay 4 vistas para los reportes, una función y un procedimiento de cobro, y 5 triggers. El detalle, el diagrama ER y las reglas de integridad están en [Modelo_Datos.md](docs/Modelo_Datos.md).
 
 ## Reparto del equipo
 
@@ -83,23 +83,30 @@ Tablas: `Usuarios`, `Clientes`, `Vehiculos`, `Precios`, `Servicios`, `Cobros` y 
 
 Los roles no son cerrados: nos ayudamos entre todos.
 
-## Estructura de carpetas prevista (MVC)
+## Estructura de carpetas (MVC)
 
 ```
 Proyecto Final/
 ├── README.md
-├── docs/           # modelo de datos, forma de trabajo y guía de inicio
-├── database/       # script de tablas, datos de prueba, vistas y triggers
+├── docs/           # modelo de datos, forma de trabajo, guía de inicio y guion de la demo
+├── database/       # 01 tablas, 02 datos de prueba, 03 cobro, 04 vistas, 05 triggers
 ├── requirements.txt
 └── app/
-    ├── main.py         # punto de entrada
+    ├── main.py            # comprueba la conexión
     ├── config.example.py  # plantilla de configuración (config.py no se sube)
-    ├── modelo/         # acceso a la BD (consultas); conexion.py abre la conexión
-    ├── vista/          # ventanas Tkinter
-    └── controlador/    # lógica: login, cálculo de cobros, validaciones
+    ├── modelo/            # acceso a la BD; conexion.py abre la conexión
+    ├── vista/             # ventanas Tkinter (login, menú, entradas y salidas, pensiones, reportes, usuarios, clientes y vehículos)
+    └── controlador/       # reglas y validaciones de cada módulo
 ```
 
-Es una propuesta y puede cambiar cuando se empiece el código.
+## Cómo ejecutarlo
+
+1. Enciende MySQL en XAMPP.
+2. Crea la base y sus datos con los scripts de `database/` (ver [docs/Guia_Inicio.md](docs/Guia_Inicio.md)).
+3. Abre la app: `python -m app.vista.login_vista`.
+4. Entra con `admin` / `admin123` (administrador) o `cobrador` / `cobrador123`.
+
+El recorrido completo de la demo está en [docs/Guia_Demo.md](docs/Guia_Demo.md).
 
 ## Documentación
 
@@ -108,25 +115,25 @@ Es una propuesta y puede cambiar cuando se empiece el código.
 | [docs/Modelo_Datos.md](docs/Modelo_Datos.md) | Tablas, columnas, diagrama ER y reglas de integridad |
 | [docs/WoW.md](docs/WoW.md) | Cómo trabajamos: ramas, pull requests, revisiones y comunicación |
 | [docs/Guia_Inicio.md](docs/Guia_Inicio.md) | Comandos paso a paso: instalar, crear la base, subir cambios y abrir un PR |
+| [docs/Guia_Demo.md](docs/Guia_Demo.md) | Guion de la demo: qué mostrar, en qué orden y qué debe pasar |
 
 ## Pasos a seguir
 
 - [x] Definir el stack, el patrón y la tarifa.
 - [x] Decidir fracciones de hora, clientes frecuentes, clientes de paso y contraseñas.
-- [x] Proponer el modelo de datos ([Modelo_Datos.md](docs/Modelo_Datos.md)).
-- [ ] Definir la pensión: modalidad, precio y % de descuento después de 2 años.
-- [ ] Definir cuántas visitas hacen frecuente a un cliente.
-- [ ] Resolver las dudas con el profesor (abajo).
-- [ ] Cerrar el modelo de datos y el diagrama ER.
-- [ ] Script SQL: tablas con llaves primarias y foráneas, y datos de prueba.
-- [ ] Triggers, vistas de reportes y función de cobro.
-- [ ] Módulo de conexión a la BD y estructura MVC en Git.
-- [ ] Login y perfiles.
-- [ ] CRUD de usuarios, clientes y vehículos.
-- [ ] Entradas, salidas y cobros.
-- [ ] Pensiones.
-- [ ] Pantalla de reportes.
-- [ ] Pruebas con datos de ejemplo y entrega.
+- [x] Proponer y cerrar el modelo de datos ([Modelo_Datos.md](docs/Modelo_Datos.md)).
+- [x] Definir la pensión: por meses, $1,200.00 y 10% de descuento después de 2 años.
+- [x] Definir cuántas visitas hacen frecuente a un cliente: 10 en 30 días.
+- [x] Script SQL: tablas con llaves, datos de prueba, función de cobro, vistas y triggers.
+- [x] Módulo de conexión a la BD y estructura MVC en Git.
+- [x] Login y perfiles.
+- [x] CRUD de usuarios, clientes y vehículos.
+- [x] Entradas, salidas y cobros.
+- [x] Pensiones.
+- [x] Pantalla de reportes.
+- [x] Pruebas con datos de ejemplo.
+- [ ] Resolver con el profesor qué significa "por cada 5 horas" para clientes frecuentes (hoy se aplica la tarifa escalonada de $26 y $22).
+- [ ] Ensayo de la demo y entrega.
 
 ## Ideas para subir la calificación
 
