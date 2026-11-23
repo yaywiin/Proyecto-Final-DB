@@ -15,3 +15,8 @@ venv/
 .DS_Store
 .vscode/
 .idea/
+
+# Videos y reportes entregables (no van al repositorio)
+*.mp4
+*.mov
+*.docx

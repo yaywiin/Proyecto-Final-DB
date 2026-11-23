@@ -228,7 +228,7 @@ INSERT INTO parametros (clave, valor) VALUES
   ('periodo_dias_frecuente', '30');
 
 -- Pensión: precio por mes y % de descuento para clientes con más de 2 años de pensión.
--- Valores provisionales: el equipo aún debe confirmarlos (se cambian aquí o en la tabla).
+-- Valores definidos por el equipo (se pueden cambiar aquí o directamente en la tabla).
 INSERT INTO parametros (clave, valor) VALUES
   ('precio_pension_mensual', '1200'),
   ('descuento_pension_2anios', '10');
