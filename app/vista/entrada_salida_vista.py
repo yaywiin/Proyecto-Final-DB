@@ -20,6 +20,11 @@ DORADO = "#d4af37"
 TEXTO = "#f3f4f6"
 TEXTO_SUAVE = "#9ca3af"
 PLACEHOLDER = "#6b7280"
+COLORES_VEHICULO = (
+    "Blanco", "Negro", "Gris", "Plata", "Rojo",
+    "Azul", "Verde", "Amarillo", "Café", "Beige",
+    "Naranja", "Vino", "Dorado", "Otro",
+)
 
 
 class EntryConPlaceholder(tk.Entry):
@@ -102,13 +107,19 @@ class VentanaEntradaSalida:
     def _etiqueta(self, padre, texto):
         tk.Label(padre, text=texto, bg=PANEL, fg=TEXTO_SUAVE, font=("Segoe UI", 8)).pack(anchor=tk.W)
 
-    def _campo(self, padre, variable, ejemplo, limite=None):
+    def _campo(self, padre, variable, ejemplo, limite=None, solo_letras=False):
         opciones = {}
-        if limite:
-            # Al escribir o pegar, rechaza lo que pase del límite de caracteres
+        if limite or solo_letras:
+            def _validar(texto):
+                if limite and len(texto) > limite:
+                    return False
+                if solo_letras and texto and not all(c.isalpha() or c == " " for c in texto):
+                    return False
+                return True
+
             opciones = {
                 "validate": "key",
-                "validatecommand": (self.ventana.register(lambda texto: len(texto) <= limite), "%P"),
+                "validatecommand": (self.ventana.register(_validar), "%P"),
             }
         entry = EntryConPlaceholder(
             padre, variable, ejemplo, bg=CAMPO, fg=TEXTO, insertbackground=TEXTO,
@@ -164,9 +175,15 @@ class VentanaEntradaSalida:
         self._etiqueta(form, "Marca")
         self.entry_marca = self._campo(form, self.var_marca, "Ej. Nissan")
         self._etiqueta(form, "Modelo")
-        self.entry_modelo = self._campo(form, self.var_modelo, "Ej. Versa")
+        self.entry_modelo = self._campo(form, self.var_modelo, "Ej. Versa", solo_letras=True)
         self._etiqueta(form, "Color")
-        self.entry_color = self._campo(form, self.var_color, "Ej. Rojo")
+        self.combo_color = ttk.Combobox(
+            form,
+            textvariable=self.var_color,
+            values=COLORES_VEHICULO,
+            state="readonly",
+        )
+        self.combo_color.pack(fill=tk.X, ipady=3, pady=(2, 10))
 
         self._boton(form, "Registrar entrada", self._registrar_entrada, dorado=True).pack(fill=tk.X, pady=(4, 6))
         self._boton(form, "Registrar salida", self._registrar_salida).pack(fill=tk.X)
@@ -211,8 +228,10 @@ class VentanaEntradaSalida:
     # ----------------------------------------------------------------- lógica
     def _habilitar_datos_nuevo(self, activo):
         estado = "normal" if activo else "disabled"
-        self.combo_cliente.config(state="readonly" if activo else "disabled")
-        for entry in (self.entry_marca, self.entry_modelo, self.entry_color):
+        estado_combo = "readonly" if activo else "disabled"
+        self.combo_cliente.config(state=estado_combo)
+        self.combo_color.config(state=estado_combo)
+        for entry in (self.entry_marca, self.entry_modelo):
             entry.config(state=estado)
 
     def _cargar_clientes(self):
@@ -289,7 +308,25 @@ class VentanaEntradaSalida:
         self.entry_matricula.focus()
 
     def _registrar_entrada(self):
-        self._verificar_vehiculo()
+        if not self.var_matricula.get().strip():
+            messagebox.showwarning("Entrada", "Ingresa la matrícula del vehículo.", parent=self.ventana)
+            return
+
+        vehiculo = self._verificar_vehiculo()
+        if vehiculo is None:
+            if (
+                not self.clientes.get(self.var_cliente.get())
+                or not self.var_marca.get().strip()
+                or not self.var_modelo.get().strip()
+                or not self.var_color.get().strip()
+            ):
+                messagebox.showwarning(
+                    "Entrada",
+                    "Para un vehículo nuevo debes llenar cliente, marca, modelo y color.",
+                    parent=self.ventana,
+                )
+                return
+
         try:
             resultado = controlador.registrar_entrada(
                 self.var_matricula.get(),

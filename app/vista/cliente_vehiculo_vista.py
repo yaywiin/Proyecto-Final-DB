@@ -21,6 +21,11 @@ TEXTO = "#f3f4f6"
 TEXTO_SUAVE = "#9ca3af"
 PELIGRO = "#7f1d1d"
 PELIGRO_HOVER = "#991b1b"
+COLORES_VEHICULO = (
+    "Blanco", "Negro", "Gris", "Plata", "Rojo",
+    "Azul", "Verde", "Amarillo", "Café", "Beige",
+    "Naranja", "Vino", "Dorado", "Otro",
+)
 
 
 def abrir_clientes_vehiculos(parent, usuario=None, pestana="clientes"):
@@ -120,14 +125,20 @@ class VentanaClientesVehiculos:
             anchor=tk.W
         )
 
-    def _campo(self, padre, variable, limite=None):
+    def _campo(self, padre, variable, limite=None, solo_digitos=False, solo_letras=False):
         opciones = {}
-        if limite:
+        if limite or solo_digitos or solo_letras:
+            def _validar(texto):
+                if limite and len(texto) > limite:
+                    return False
+                if solo_digitos and texto and not texto.isdigit():
+                    return False
+                if solo_letras and texto and not all(c.isalpha() or c == " " for c in texto):
+                    return False
+                return True
+
             opciones["validate"] = "key"
-            opciones["validatecommand"] = (
-                self.ventana.register(lambda texto: len(texto) <= limite),
-                "%P",
-            )
+            opciones["validatecommand"] = (self.ventana.register(_validar), "%P")
         entry = tk.Entry(
             padre,
             textvariable=variable,
@@ -203,7 +214,12 @@ class VentanaClientesVehiculos:
         )
 
         self._etiqueta(form, "Teléfono (opcional)")
-        self._campo(form, self.var_cli_telefono, limite=controlador.LONGITUD_TELEFONO)
+        self._campo(
+          form,
+          self.var_cli_telefono,
+          limite=controlador.LONGITUD_TELEFONO,
+          solo_digitos=True,
+      )
 
         self._etiqueta(form, "Tipo de cliente")
         ttk.Combobox(
@@ -308,10 +324,21 @@ class VentanaClientesVehiculos:
         self._campo(form, self.var_veh_marca, limite=controlador.LONGITUD_MARCA)
 
         self._etiqueta(form, "Modelo")
-        self._campo(form, self.var_veh_modelo, limite=controlador.LONGITUD_MODELO)
+        self._campo(
+            form,
+            self.var_veh_modelo,
+            limite=controlador.LONGITUD_MODELO,
+            solo_letras=True,
+        )
 
         self._etiqueta(form, "Color")
-        self._campo(form, self.var_veh_color, limite=controlador.LONGITUD_COLOR)
+        self.combo_veh_color = ttk.Combobox(
+          form,
+          textvariable=self.var_veh_color,
+          values=COLORES_VEHICULO,
+          state="readonly",
+        )
+        self.combo_veh_color.pack(fill=tk.X, ipady=3, pady=(2, 10))
 
         self.btn_veh_guardar = self._boton(
             form, "Guardar vehículo", self._guardar_vehiculo, estilo="dorado"
@@ -469,6 +496,13 @@ class VentanaClientesVehiculos:
         self.entry_cli_nombre.focus()
 
     def _guardar_cliente(self):
+        if not self.var_cli_nombre.get().strip() or not self.var_cli_telefono.get().strip() or not self.var_cli_tipo.get().strip():
+            messagebox.showwarning(
+                "Clientes",
+                "Todos los campos del cliente son obligatorios.",
+                parent=self.ventana,
+            )
+            return
         try:
             if self.cliente_seleccionado is None:
                 matricula_pg = self._vehiculos_pg_combo.get(self.var_cli_vehiculo_pg.get())
@@ -576,8 +610,22 @@ class VentanaClientesVehiculos:
         self.btn_veh_guardar.config(text="Guardar vehículo")
         self.entry_veh_matricula.focus()
 
+   
     def _guardar_vehiculo(self):
         id_cliente = self._clientes_combo.get(self.var_veh_cliente.get())
+        if (
+            not self.var_veh_matricula.get().strip()
+            or not id_cliente
+            or not self.var_veh_marca.get().strip()
+            or not self.var_veh_modelo.get().strip()
+            or not self.var_veh_color.get().strip()
+        ):
+            messagebox.showwarning(
+                "Vehículos",
+                "Todos los campos del vehículo son obligatorios.",
+                parent=self.ventana,
+            )
+            return
         try:
             if self.vehiculo_seleccionado is None:
                 controlador.crear_vehiculo(
