@@ -78,11 +78,13 @@ CREATE TABLE detalle_servicios (
   id_usuario          INT UNSIGNED NOT NULL,
   fecha_entrada       DATETIME     NOT NULL,
   fecha_salida        DATETIME     NULL,
+  numero_cajon        INT UNSIGNED NULL,
   PRIMARY KEY (id_detalle_servicio),
   KEY idx_detalle_servicios_matricula (matricula),
   KEY idx_detalle_servicios_servicio (id_servicio),
   KEY idx_detalle_servicios_usuario (id_usuario),
   KEY idx_detalle_servicios_entrada (fecha_entrada),
+  KEY idx_detalle_servicios_cajon (numero_cajon),
   CONSTRAINT fk_detalle_servicios_vehiculo
     FOREIGN KEY (matricula) REFERENCES vehiculos (matricula)
     ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -107,10 +109,12 @@ CREATE TABLE pensiones (
   fecha_inicio DATE          NOT NULL,
   fecha_fin    DATE          NOT NULL,
   monto        DECIMAL(10,2) NOT NULL,
+  numero_cajon INT UNSIGNED  NULL,
   PRIMARY KEY (id_pension),
   KEY idx_pensiones_cliente (id_cliente),
   KEY idx_pensiones_vehiculo (matricula, fecha_inicio, fecha_fin),
   KEY idx_pensiones_usuario (id_usuario),
+  KEY idx_pensiones_cajon (numero_cajon),
   CONSTRAINT fk_pensiones_cliente
     FOREIGN KEY (id_cliente) REFERENCES clientes (id_cliente)
     ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -232,3 +236,8 @@ INSERT INTO parametros (clave, valor) VALUES
 INSERT INTO parametros (clave, valor) VALUES
   ('precio_pension_mensual', '1200'),
   ('descuento_pension_2anios', '10');
+
+-- Parámetros del croquis y distribución de cajones
+INSERT INTO parametros (clave, valor) VALUES
+  ('total_cajones', '30'),
+  ('cajones_por_fila', '10');
