@@ -41,6 +41,7 @@ _ACCESO_DENEGADO = 1045
 # Errores que ocurren al ejecutar una sentencia (no al conectar).
 _TABLA_NO_EXISTE = 1146
 _RUTINA_NO_EXISTE = 1305
+_COLUMNA_NO_EXISTE = 1054
 _ERROR_DE_REGLA = 1644  # SIGNAL de un trigger o procedimiento: el mensaje ya está en español
 _LLAVE_DUPLICADA = 1062
 _CONEXION_PERDIDA = (2006, 2013)
@@ -53,7 +54,7 @@ def _explicar(error):
     detalle = error.args[1] if len(error.args) > 1 else str(error)
     if codigo == _ERROR_DE_REGLA:
         return detalle
-    if codigo in (_RUTINA_NO_EXISTE, _TABLA_NO_EXISTE):
+    if codigo in (_RUTINA_NO_EXISTE, _TABLA_NO_EXISTE, _COLUMNA_NO_EXISTE):
         return (
             "A la base de datos le falta una parte. Vuelve a correr los scripts de database/ "
             f"en orden (01 al 05). Detalle: {detalle}"

@@ -12,6 +12,7 @@ Modelo final de la base de datos `estacionamiento` (MariaDB). Refleja los script
 | Contraseñas | Hash SHA-256 en hexadecimal (64 caracteres) |
 | Pensión | Por fecha y vehículo, por meses completos. Precio mensual y % de descuento (más de 2 años desde su primera pensión) en la tabla `parametros`: $1,200.00 y 10% |
 | Tablas de detalle | Solicitadas por el profesor: `detalle_servicios` (entre vehículos y servicios) y `detalle_cobros` (entre vehículos y cobros) |
+| Cajones | Asignación de cajón físico (`numero_cajon`) en `detalle_servicios` y `pensiones`. Capacidad y distribución configuradas en `parametros`: `total_cajones` (20) y `cajones_por_fila` (5) |
 
 ## Diagrama ER
 
@@ -65,6 +66,7 @@ erDiagram
         int id_usuario FK
         datetime fecha_entrada
         datetime fecha_salida "NULL mientras sigue dentro"
+        int numero_cajon "NULL"
     }
     PENSIONES {
         int id_pension PK
@@ -74,6 +76,7 @@ erDiagram
         date fecha_inicio
         date fecha_fin
         decimal monto
+        int numero_cajon "NULL"
     }
     COBROS {
         int id_cobro PK
@@ -113,12 +116,12 @@ erDiagram
 | `clientes` | Clientes registrados | El 1 es "Público general" y es de paso. |
 | `vehiculos` | Vehículos de cada cliente | La matrícula es la llave. Un vehículo nuevo se liga al cliente 1. |
 | `servicios` | Catálogo de servicios disponibles | 1 = "Estancia por hora", 2 = "Pensión mensual". |
-| `detalle_servicios` | Registro de servicios aplicados a cada vehículo | Conecta `vehiculos` con `servicios` (M:N). `fecha_salida` NULL si sigue dentro. |
-| `pensiones` | Contrato por periodo para un vehículo | Con una pensión vigente no se cobra por hora. |
+| `detalle_servicios` | Registro de servicios aplicados a cada vehículo | Conecta `vehiculos` con `servicios` (M:N). `fecha_salida` NULL si sigue dentro. `numero_cajon` indica el cajón asignado (NULL en registros anteriores). |
+| `pensiones` | Contrato por periodo para un vehículo | Con una pensión vigente no se cobra por hora. `numero_cajon` indica el cajón reservado. |
 | `cobros` | Recibo o ticket maestro | Registra el folio, cajero, monto total y fecha. |
 | `detalle_cobros` | Desglose del cobro por vehículo y concepto | Conecta `cobros` con `vehiculos` (M:N). Desglosa horas y monto de estancia o pensión. |
 | `precios` | Tarifa escalonada por tipo de cliente | Ver la tabla de abajo. |
-| `parametros` | Valores configurables (clave y valor) | `visitas_para_frecuente`, `periodo_dias_frecuente`, `precio_pension_mensual` y `descuento_pension_2anios`. |
+| `parametros` | Valores configurables (clave y valor) | `visitas_para_frecuente`, `periodo_dias_frecuente`, `precio_pension_mensual`, `descuento_pension_2anios`, `total_cajones` y `cajones_por_fila`. |
 
 ## Datos base (los crea `01_tablas.sql`)
 
@@ -133,14 +136,14 @@ erDiagram
 
 **Clientes:** `id_cliente = 1`, "Público general", de paso.
 **Servicios:** `id_servicio = 1` ("Estancia por hora"), `id_servicio = 2` ("Pensión mensual").
-**Parámetros:** `visitas_para_frecuente = 10`, `periodo_dias_frecuente = 30`.
+**Parámetros:** `visitas_para_frecuente = 10`, `periodo_dias_frecuente = 30`, `precio_pension_mensual = 1200`, `descuento_pension_2anios = 10`, `total_cajones = 20`, `cajones_por_fila = 5`.
 
 ## Datos de prueba (`02_datos_prueba.sql`)
 
 - **Usuarios:** `admin` / `admin123` y `cobrador` / `cobrador123`.
 - 3 clientes (Público general, Ana López frecuente y Luis Pérez de paso), 6 vehículos.
-- 26 servicios cerrados entre noviembre de 2025 y octubre de 2026, con su cobro, y 1 servicio que sigue dentro.
-- 1 pensión de prueba (octubre de 2026, $1,200.00) con su cobro.
+- 26 servicios cerrados entre noviembre de 2025 y octubre de 2026, con su cobro, y 1 servicio que sigue dentro (asignado al cajón 5).
+- 1 pensión de prueba (octubre de 2026, $1,200.00, asignada al cajón 1) con su cobro.
 
 ## Regla de cobro (por hora)
 
@@ -162,12 +165,15 @@ Si el vehículo tiene una pensión vigente (la fecha cae entre `fecha_inicio` y 
 - Los montos no pueden ser negativos.
 - Un detalle de cobro es de un servicio **o** de una pensión, nunca de los dos (`ck_detalle_cobros_origen`).
 - Un detalle de servicio o pensión se cobra una sola vez (`UNIQUE`).
+- El número de cajón asignado debe estar dentro del rango permitido (1 a `total_cajones`).
+- No se permite asignar un cajón a una estancia activa si ya está ocupado por otro vehículo o apartado por una pensión activa de otro vehículo.
+- No se permite asignar un cajón a una pensión si se traslapa con otra pensión o si actualmente está ocupado por otro vehículo.
 
 ## Lo que hace la base por sí sola
 
 - **Función y procedimiento de cobro** (`03_funcion_cobro.sql`): calculan el monto escalonado y proporcional, y dan $0.00 si hay pensión vigente.
 - **Vistas de los reportes 7 a 10** (`04_vistas.sql`), todas con la columna `anio` para filtrar.
-- **Triggers** (`05_triggers.sql`): evitan la doble entrada de un vehículo, pasan al cliente a frecuente al cumplir las visitas, impiden cobrar una estancia sin salida y validan que la salida no sea anterior a la entrada.
+- **Triggers** (`05_triggers.sql`): evitan la doble entrada de un vehículo, pasan al cliente a frecuente al cumplir las visitas, impiden cobrar una estancia sin salida, validan que la salida no sea anterior a la entrada, y validan la disponibilidad y rangos de los cajones en estancias y pensiones.
 
 ## Reportes y de dónde salen
 

@@ -55,13 +55,13 @@ INSERT INTO detalle_servicios (id_detalle_servicio, matricula, id_servicio, id_u
   (25, 'MNP2345', 1, 2, '2026-09-22 08:05:00', '2026-09-22 16:05:00'),
   (26, 'ABC1234', 1, 2, '2026-10-28 08:15:00', '2026-10-28 09:25:00');
 
--- Un servicio que sigue dentro del estacionamiento (sin salida)
-INSERT INTO detalle_servicios (id_detalle_servicio, matricula, id_servicio, id_usuario, fecha_entrada, fecha_salida) VALUES
-  (27, 'JKL4567', 1, 2, '2026-11-09 08:00:00', NULL);
+-- Un servicio que sigue dentro del estacionamiento (sin salida, asignado al cajón 5)
+INSERT INTO detalle_servicios (id_detalle_servicio, matricula, id_servicio, id_usuario, fecha_entrada, fecha_salida, numero_cajon) VALUES
+  (27, 'JKL4567', 1, 2, '2026-11-09 08:00:00', NULL, 5);
 
--- Pensión de prueba (el precio es un valor provisional, falta decidirlo en equipo)
-INSERT INTO pensiones (id_pension, id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto) VALUES
-  (1, 2, 'MNP2345', 1, '2026-10-01', '2026-10-31', 1200.00);
+-- Pensión de prueba (asignada al cajón 1)
+INSERT INTO pensiones (id_pension, id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto, numero_cajon) VALUES
+  (1, 2, 'MNP2345', 1, '2026-10-01', '2026-10-31', 1200.00, 1);
 
 -- Cobros (recibos maestros)
 INSERT INTO cobros (id_cobro, id_usuario, monto_total, fecha_cobro) VALUES
