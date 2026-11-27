@@ -168,6 +168,7 @@ Si el vehículo tiene una pensión vigente (la fecha cae entre `fecha_inicio` y 
 - El número de cajón asignado debe estar dentro del rango permitido (1 a `total_cajones`).
 - No se permite asignar un cajón a una estancia activa si ya está ocupado por otro vehículo o apartado por una pensión activa de otro vehículo.
 - No se permite asignar un cajón a una pensión si se traslapa con otra pensión o si actualmente está ocupado por otro vehículo.
+- Si el vehículo está dentro y la pensión incluye el día de hoy, la pensión va en el cajón donde está (lo valida la aplicación).
 
 ## Lo que hace la base por sí sola
 

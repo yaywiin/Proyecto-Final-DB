@@ -58,6 +58,8 @@ class VentanaPensiones:
         self.var_estado = tk.StringVar(value="Escribe la matrícula del vehículo.")
 
         self._crear_widgets()
+        for variable in (self.var_matricula, self.var_fecha, self.var_meses):
+            variable.trace_add("write", lambda *_: self._revisar_cajon())
         self._actualizar_lista()
         self.entry_matricula.focus()
 
@@ -99,7 +101,6 @@ class VentanaPensiones:
         self._etiqueta(form, "Matrícula")
         self.entry_matricula = self._campo(form, self.var_matricula, "Ej. ABC1234", limite=LONGITUD_MATRICULA)
         self.entry_matricula.bind("<Return>", lambda e: self._al_confirmar_matricula())
-        self.entry_matricula.bind("<FocusOut>", lambda e: self._sugerir_cajon())
 
         self._etiqueta(form, "Fecha de inicio (AAAA-MM-DD)")
         self._campo(form, self.var_fecha, "Ej. 2026-11-23")
@@ -178,25 +179,47 @@ class VentanaPensiones:
             self.var_matricula.get(), self.var_fecha.get(), self.var_meses.get()
         )
 
+    def _revisar_cajon(self, proponer=True):
+        """Ajusta el selector según si el vehículo está dentro.
+
+        Dentro y con la pensión desde hoy: su cajón queda puesto y bloqueado. Dentro y con
+        la pensión para después: solo se propone. En otro caso se deja elegir.
+        """
+        datos = (self.var_matricula.get(), self.var_fecha.get(), self.var_meses.get())
+        try:
+            numero = controlador.cajon_obligado(*datos)
+            if numero is not None:
+                if numero in self._cajones_libres():
+                    nota = f"Está dentro: su pensión va en el cajón {numero}."
+                else:
+                    nota = f"Está en el cajón {numero}, no disponible en esas fechas. Registra su salida."
+                self.selector.fijar(numero, nota)
+                return
+            self.selector.liberar()
+            if proponer:
+                self._sugerir_cajon()
+        except ErrorServicio:
+            self.selector.liberar()  # Datos incompletos: se avisará al contratar
+        except ErrorBD as error:
+            self.selector.liberar()
+            self.selector.pista.config(text=str(error))
+
     def _sugerir_cajon(self):
         """Si el vehículo ya está dentro y no se ha elegido cajón, propone el suyo."""
         if self.var_cajon.get():
             return
-        try:
-            numero = controlador.cajon_sugerido(self.var_matricula.get())
-            if numero is not None and numero in self._cajones_libres():
-                self.var_cajon.set(str(numero))
-                self.selector.pista.config(text=f"El vehículo está en el cajón {numero}.")
-        except ErrorServicio:
-            return  # Datos incompletos: se avisará al contratar
-        except ErrorBD as error:
-            messagebox.showerror("Base de datos", str(error), parent=self.ventana)
+        numero = controlador.cajon_sugerido(self.var_matricula.get())
+        if numero is not None and numero in self._cajones_libres():
+            self.var_cajon.set(str(numero))
+            self.selector.pista.config(text=f"El vehículo está en el cajón {numero}.")
 
     def _al_confirmar_matricula(self):
-        self._sugerir_cajon()
-        self.selector.enfocar()
+        self._revisar_cajon()
+        if not self.selector.fijo:
+            self.selector.enfocar()
 
     def _contratar(self):
+        self._revisar_cajon(proponer=False)  # Pudo entrar o salir desde que se escribió
         try:
             pension = controlador.previsualizar_pension(
                 self.var_matricula.get(), self.var_fecha.get(), self.var_meses.get(), self.var_cajon.get()

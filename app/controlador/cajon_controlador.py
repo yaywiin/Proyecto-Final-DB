@@ -35,11 +35,26 @@ def cajon_fijo(matricula):
 
 
 def libres_para_pension(matricula, fecha_inicio, fecha_fin):
-    """Cajones sin otra pensión en el periodo; si empieza ya, sin otro vehículo dentro."""
+    """Cajones sin otra pensión en el periodo.
+
+    Si el periodo incluye hoy, tampoco cuentan los que tienen otro vehículo dentro, y si
+    este vehículo ya está dentro solo puede apartar el cajón donde está.
+    """
     no_disponibles = {p["numero_cajon"] for p in modelo.apartados(fecha_inicio, fecha_fin)}
     if fecha_inicio <= modelo.fecha_actual() <= fecha_fin:
         no_disponibles.update(n for n, ocupante in modelo.ocupados().items() if ocupante != matricula)
-    return [n for n in range(1, total_cajones() + 1) if n not in no_disponibles]
+    libres = [n for n in range(1, total_cajones() + 1) if n not in no_disponibles]
+    obligado = cajon_obligado(matricula, fecha_inicio, fecha_fin)
+    if obligado is not None:
+        return [n for n in libres if n == obligado]
+    return libres
+
+
+def cajon_obligado(matricula, fecha_inicio, fecha_fin):
+    """Cajón que debe llevar la pensión porque el vehículo está dentro, o None."""
+    if fecha_inicio <= modelo.fecha_actual() <= fecha_fin:
+        return cajon_actual(matricula)
+    return None
 
 
 def cajon_actual(matricula):
