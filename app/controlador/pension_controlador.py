@@ -70,6 +70,31 @@ def cajones_disponibles(matricula, texto_fecha, texto_meses):
     return cajones.libres_para_pension(matricula, inicio, fin)
 
 
+def cajon_obligado(matricula, texto_fecha, texto_meses):
+    """Si el vehículo está dentro y la pensión incluye hoy, su cajón actual; si no, None."""
+    inicio, _meses, fin = _leer_periodo(texto_fecha, texto_meses)
+    return cajones.cajon_obligado(normalizar_matricula(matricula), inicio, fin)
+
+
+def _validar_cajon(texto, matricula, inicio, fin):
+    """Número de cajón que se puede apartar; explica por qué si el vehículo está dentro."""
+    libres = cajones.libres_para_pension(matricula, inicio, fin)
+    obligado = cajones.cajon_obligado(matricula, inicio, fin)
+    if obligado is not None:
+        if obligado not in libres:
+            raise ErrorServicio(
+                f"El vehículo {matricula} está en el cajón {obligado}, que no está disponible "
+                "en esas fechas. Registra su salida para contratar en otro cajón."
+            )
+        escrito = str(texto if texto is not None else "").strip()
+        if escrito.isdecimal() and int(escrito) != obligado:
+            raise ErrorServicio(
+                f"El vehículo {matricula} está dentro, en el cajón {obligado}: la pensión debe "
+                "ser en ese cajón. Para usar otro, registra primero su salida."
+            )
+    return cajones.validar_cajon(texto, libres)
+
+
 def cajon_sugerido(matricula):
     """Si el vehículo ya está dentro, su cajón actual; si no, None."""
     return cajones.cajon_actual(normalizar_matricula(matricula))
@@ -92,7 +117,7 @@ def previsualizar_pension(matricula, texto_fecha, texto_meses, texto_cajon=None)
     if modelo.hay_traslape(matricula, inicio, fin):
         raise ErrorServicio(f"El vehículo {matricula} ya tiene una pensión en esas fechas.")
 
-    cajon = cajones.validar_cajon(texto_cajon, cajones.libres_para_pension(matricula, inicio, fin))
+    cajon = _validar_cajon(texto_cajon, matricula, inicio, fin)
 
     precio = _leer_numero("precio_pension_mensual", "el precio mensual de la pensión")
     descuento = _leer_numero("descuento_pension_2anios", "el descuento de la pensión")
@@ -121,6 +146,8 @@ def confirmar_pension(pension, id_cobrador):
     """Guarda la pensión calculada en `previsualizar_pension`. Devuelve su id."""
     if modelo.hay_traslape(pension["matricula"], pension["fecha_inicio"], pension["fecha_fin"]):
         raise ErrorServicio(f"El vehículo {pension['matricula']} ya tiene una pensión en esas fechas.")
+    # El vehículo pudo entrar, o el cajón ocuparse, mientras se mostraba el cobro.
+    _validar_cajon(pension["cajon"], pension["matricula"], pension["fecha_inicio"], pension["fecha_fin"])
     id_pension, _id_cobro = modelo.contratar_pension(
         pension["id_cliente"],
         pension["matricula"],

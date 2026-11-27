@@ -27,7 +27,10 @@ class SelectorCajon(tk.Frame):
             validate="key", validatecommand=(self.register(self._validar), "%P"),
         )
         self.combo.pack(fill=tk.X, ipady=3)
-        self.pista = tk.Label(self, text="", bg=PANEL, fg=TEXTO_SUAVE, font=("Segoe UI", 8), anchor=tk.W)
+        self.pista = tk.Label(
+            self, text="", bg=PANEL, fg=TEXTO_SUAVE, font=("Segoe UI", 8), anchor=tk.W,
+            wraplength=230, justify=tk.LEFT,
+        )
         self.pista.pack(fill=tk.X)
         self.combo.bind("<KeyRelease>", self._al_escribir)
 
@@ -47,7 +50,7 @@ class SelectorCajon(tk.Frame):
             libres = [str(numero) for numero in self.obtener_libres()]
         except (ErrorServicio, ErrorBD) as error:
             self.combo["values"] = []
-            self.pista.config(text=str(error), wraplength=230, justify=tk.LEFT)
+            self.pista.config(text=str(error))
             return
         escrito = self.variable.get()
         # Con un cajón ya elegido se muestran todos, para poder cambiarlo.
@@ -68,7 +71,7 @@ class SelectorCajon(tk.Frame):
         return f"Libres: {texto}{resto}"
 
     def fijar(self, numero, nota):
-        """Deja el cajón puesto y bloqueado (vehículos con pensión)."""
+        """Deja el cajón puesto y bloqueado, con una nota que explica por qué."""
         self.fijo = True
         self.variable.set(str(numero))
         self.combo.config(state="disabled")
