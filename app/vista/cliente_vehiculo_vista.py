@@ -12,6 +12,7 @@ from tkinter import messagebox, ttk
 from app.controlador import cliente_vehiculo_controlador as controlador
 from app.controlador.cliente_vehiculo_controlador import ErrorClienteVehiculo
 from app.modelo.conexion import ErrorBD
+from app.vista.validaciones import es_solo_texto
 
 FONDO = "#0b0f19"
 PANEL = "#111827"
@@ -133,7 +134,7 @@ class VentanaClientesVehiculos:
                     return False
                 if solo_digitos and texto and not texto.isdigit():
                     return False
-                if solo_letras and texto and not all(c.isalpha() or c == " " for c in texto):
+                if solo_letras and not es_solo_texto(texto):
                     return False
                 return True
 
@@ -214,14 +215,12 @@ class VentanaClientesVehiculos:
         )
 
         self._etiqueta(form, "Teléfono")
-
-        self._etiqueta(form, "Teléfono")
         self._campo(
-          form,
-          self.var_cli_telefono,
-          limite=controlador.LONGITUD_TELEFONO,
-          solo_digitos=True,
-      )
+            form,
+            self.var_cli_telefono,
+            limite=controlador.LONGITUD_TELEFONO,
+            solo_digitos=True,
+        )
 
         self._etiqueta(form, "Tipo de cliente")
         ttk.Combobox(
@@ -624,7 +623,7 @@ class VentanaClientesVehiculos:
             )
             return
 
-        mat = self.var_veh_matricula.get().strip().replace("-", "")
+        mat = "".join(self.var_veh_matricula.get().split())
         if len(mat) < 5 or not mat.isalnum() or not (any(c.isalpha() for c in mat) and any(c.isdigit() for c in mat)):
             messagebox.showwarning(
                 "Vehículos",

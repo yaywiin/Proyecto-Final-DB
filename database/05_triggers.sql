@@ -147,4 +147,236 @@ BEGIN
     END IF;
 END$$
 
+-- ---------------------------------------------------------------------
+-- 5. tg_validar_cajon_servicio
+-- Valida que el cajón asignado a una estancia (detalle_servicios):
+--   a) Esté dentro del rango permitido (1 a total_cajones de parametros).
+--   b) No esté ocupado por otro vehículo (fecha_salida IS NULL).
+--   c) No esté apartado por la pensión vigente de otro vehículo.
+-- ---------------------------------------------------------------------
+DROP TRIGGER IF EXISTS tg_validar_cajon_servicio_insert$$
+CREATE TRIGGER tg_validar_cajon_servicio_insert
+BEFORE INSERT ON detalle_servicios
+FOR EACH ROW
+BEGIN
+    DECLARE v_total_cajones     INT DEFAULT 20;
+    DECLARE v_ocupado           INT DEFAULT 0;
+    DECLARE v_reservado_pension INT DEFAULT 0;
+
+    IF NEW.numero_cajon IS NOT NULL THEN
+        -- Obtener total de cajones configurado
+        SELECT CAST(valor AS UNSIGNED) INTO v_total_cajones
+        FROM parametros
+        WHERE clave = 'total_cajones'
+        LIMIT 1;
+
+        IF v_total_cajones IS NULL THEN
+            SET v_total_cajones = 20;
+        END IF;
+
+        -- Regla a: Cajón dentro del rango permitido
+        IF NEW.numero_cajon < 1 OR NEW.numero_cajon > v_total_cajones THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El número de cajón está fuera del rango permitido.';
+        END IF;
+
+        -- Si la estancia está abierta (vehículo dentro), validar ocupación y pensión
+        IF NEW.fecha_salida IS NULL THEN
+            -- Regla b: No ocupado por otro vehículo actualmente
+            SELECT COUNT(*) INTO v_ocupado
+            FROM detalle_servicios
+            WHERE numero_cajon = NEW.numero_cajon
+              AND fecha_salida IS NULL;
+
+            IF v_ocupado > 0 THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'El cajón seleccionado ya se encuentra ocupado por otro vehículo.';
+            END IF;
+
+            -- Regla c: No apartado por la pensión vigente de otro vehículo
+            SELECT COUNT(*) INTO v_reservado_pension
+            FROM pensiones
+            WHERE numero_cajon = NEW.numero_cajon
+              AND DATE(NEW.fecha_entrada) BETWEEN fecha_inicio AND fecha_fin
+              AND matricula != NEW.matricula;
+
+            IF v_reservado_pension > 0 THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'El cajón seleccionado está reservado por una pensión activa de otro vehículo.';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS tg_validar_cajon_servicio_update$$
+CREATE TRIGGER tg_validar_cajon_servicio_update
+BEFORE UPDATE ON detalle_servicios
+FOR EACH ROW
+BEGIN
+    DECLARE v_total_cajones     INT DEFAULT 20;
+    DECLARE v_ocupado           INT DEFAULT 0;
+    DECLARE v_reservado_pension INT DEFAULT 0;
+
+    IF NEW.numero_cajon IS NOT NULL THEN
+        -- Obtener total de cajones configurado
+        SELECT CAST(valor AS UNSIGNED) INTO v_total_cajones
+        FROM parametros
+        WHERE clave = 'total_cajones'
+        LIMIT 1;
+
+        IF v_total_cajones IS NULL THEN
+            SET v_total_cajones = 20;
+        END IF;
+
+        -- Regla a: Cajón dentro del rango permitido
+        IF NEW.numero_cajon < 1 OR NEW.numero_cajon > v_total_cajones THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El número de cajón está fuera del rango permitido.';
+        END IF;
+
+        -- Si la estancia sigue abierta (sin salida), validar ocupación y pensión
+        IF NEW.fecha_salida IS NULL THEN
+            -- Regla b: No ocupado por otro registro activo distinto
+            SELECT COUNT(*) INTO v_ocupado
+            FROM detalle_servicios
+            WHERE numero_cajon = NEW.numero_cajon
+              AND fecha_salida IS NULL
+              AND id_detalle_servicio != NEW.id_detalle_servicio;
+
+            IF v_ocupado > 0 THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'El cajón seleccionado ya se encuentra ocupado por otro vehículo.';
+            END IF;
+
+            -- Regla c: No apartado por la pensión vigente de otro vehículo
+            SELECT COUNT(*) INTO v_reservado_pension
+            FROM pensiones
+            WHERE numero_cajon = NEW.numero_cajon
+              AND DATE(NEW.fecha_entrada) BETWEEN fecha_inicio AND fecha_fin
+              AND matricula != NEW.matricula;
+
+            IF v_reservado_pension > 0 THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'El cajón seleccionado está reservado por una pensión activa de otro vehículo.';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+-- ---------------------------------------------------------------------
+-- 6. tg_validar_cajon_pension
+-- Valida que el cajón asignado a una pensión:
+--   a) Esté dentro del rango permitido (1 a total_cajones de parametros).
+--   b) No se traslape con otra pensión en el mismo cajón.
+--   c) No esté ocupado actualmente por otro vehículo si la pensión está vigente hoy.
+-- ---------------------------------------------------------------------
+DROP TRIGGER IF EXISTS tg_validar_cajon_pension_insert$$
+CREATE TRIGGER tg_validar_cajon_pension_insert
+BEFORE INSERT ON pensiones
+FOR EACH ROW
+BEGIN
+    DECLARE v_total_cajones INT DEFAULT 20;
+    DECLARE v_traslape      INT DEFAULT 0;
+    DECLARE v_ocupado       INT DEFAULT 0;
+
+    IF NEW.numero_cajon IS NOT NULL THEN
+        -- Obtener total de cajones configurado
+        SELECT CAST(valor AS UNSIGNED) INTO v_total_cajones
+        FROM parametros
+        WHERE clave = 'total_cajones'
+        LIMIT 1;
+
+        IF v_total_cajones IS NULL THEN
+            SET v_total_cajones = 20;
+        END IF;
+
+        -- Regla a: Cajón dentro del rango permitido
+        IF NEW.numero_cajon < 1 OR NEW.numero_cajon > v_total_cajones THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El número de cajón está fuera del rango permitido.';
+        END IF;
+
+        -- Regla b: No traslape con otra pensión en las mismas fechas
+        SELECT COUNT(*) INTO v_traslape
+        FROM pensiones
+        WHERE numero_cajon = NEW.numero_cajon
+          AND fecha_inicio <= NEW.fecha_fin
+          AND fecha_fin >= NEW.fecha_inicio;
+
+        IF v_traslape > 0 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El cajón seleccionado ya está reservado por otra pensión en ese periodo.';
+        END IF;
+
+        -- Regla c: Si la pensión cubre hoy, no debe estar ocupado por otro vehículo
+        IF CURRENT_DATE BETWEEN NEW.fecha_inicio AND NEW.fecha_fin THEN
+            SELECT COUNT(*) INTO v_ocupado
+            FROM detalle_servicios
+            WHERE numero_cajon = NEW.numero_cajon
+              AND fecha_salida IS NULL
+              AND matricula != NEW.matricula;
+
+            IF v_ocupado > 0 THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'El cajón seleccionado se encuentra actualmente ocupado por otro vehículo.';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS tg_validar_cajon_pension_update$$
+CREATE TRIGGER tg_validar_cajon_pension_update
+BEFORE UPDATE ON pensiones
+FOR EACH ROW
+BEGIN
+    DECLARE v_total_cajones INT DEFAULT 20;
+    DECLARE v_traslape      INT DEFAULT 0;
+    DECLARE v_ocupado       INT DEFAULT 0;
+
+    IF NEW.numero_cajon IS NOT NULL THEN
+        -- Obtener total de cajones configurado
+        SELECT CAST(valor AS UNSIGNED) INTO v_total_cajones
+        FROM parametros
+        WHERE clave = 'total_cajones'
+        LIMIT 1;
+
+        IF v_total_cajones IS NULL THEN
+            SET v_total_cajones = 20;
+        END IF;
+
+        -- Regla a: Cajón dentro del rango permitido
+        IF NEW.numero_cajon < 1 OR NEW.numero_cajon > v_total_cajones THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El número de cajón está fuera del rango permitido.';
+        END IF;
+
+        -- Regla b: No traslape con otra pensión (excluyendo este mismo registro)
+        SELECT COUNT(*) INTO v_traslape
+        FROM pensiones
+        WHERE numero_cajon = NEW.numero_cajon
+          AND fecha_inicio <= NEW.fecha_fin
+          AND fecha_fin >= NEW.fecha_inicio
+          AND id_pension != NEW.id_pension;
+
+        IF v_traslape > 0 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El cajón seleccionado ya está reservado por otra pensión en ese periodo.';
+        END IF;
+
+        -- Regla c: Si la pensión cubre hoy, no debe estar ocupado por otro vehículo
+        IF CURRENT_DATE BETWEEN NEW.fecha_inicio AND NEW.fecha_fin THEN
+            SELECT COUNT(*) INTO v_ocupado
+            FROM detalle_servicios
+            WHERE numero_cajon = NEW.numero_cajon
+              AND fecha_salida IS NULL
+              AND matricula != NEW.matricula;
+
+            IF v_ocupado > 0 THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'El cajón seleccionado se encuentra actualmente ocupado por otro vehículo.';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
 DELIMITER ;
