@@ -45,7 +45,7 @@ class VentanaClientesVehiculos:
         self.ventana.configure(bg=FONDO)
         self.ventana.resizable(False, False)
         self.ventana.transient(parent)
-        self._centrar(parent, 920, 600)
+        self._centrar(parent, 920, 640)
 
         # Variables pestaña Clientes
         self.var_cli_modo = tk.StringVar(value="Nuevo cliente")
