@@ -9,17 +9,12 @@ Se abre desde el menú principal:
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+from app.controlador import cajon_controlador as cajones
 from app.controlador import servicio_controlador as controlador
 from app.controlador.servicio_controlador import ErrorServicio
 from app.modelo.conexion import ErrorBD
-
-FONDO = "#0b0f19"
-PANEL = "#111827"
-CAMPO = "#1f2937"
-DORADO = "#d4af37"
-TEXTO = "#f3f4f6"
-TEXTO_SUAVE = "#9ca3af"
-PLACEHOLDER = "#6b7280"
+from app.vista.estilo import CAMPO, DORADO, FONDO, PANEL, PLACEHOLDER, TEXTO, TEXTO_SUAVE
+from app.vista.selector_cajon import SelectorCajon
 
 
 class EntryConPlaceholder(tk.Entry):
@@ -77,13 +72,14 @@ class VentanaEntradaSalida:
         self.ventana.configure(bg=FONDO)
         self.ventana.resizable(False, False)
         self.ventana.transient(parent)
-        self._centrar(parent, 820, 600)
+        self._centrar(parent, 860, 660)
 
         self.var_matricula = tk.StringVar()
         self.var_cliente = tk.StringVar()
         self.var_marca = tk.StringVar()
         self.var_modelo = tk.StringVar()
         self.var_color = tk.StringVar()
+        self.var_cajon = tk.StringVar()
         self.var_estado = tk.StringVar(value="Escribe una matrícula y presiona Enter.")
         self.clientes = {}
         self._pendiente = None
@@ -118,17 +114,13 @@ class VentanaEntradaSalida:
         return entry
 
     def _boton(self, padre, texto, comando, dorado=False):
-        """Botón hecho con Label: en macOS los tk.Button ignoran los colores."""
-        fondo, hover = (DORADO, "#e5c158") if dorado else (CAMPO, "#374151")
-        color = FONDO if dorado else TEXTO
-        boton = tk.Label(
-            padre, text=texto, bg=fondo, fg=color, font=("Segoe UI", 10, "bold"),
-            padx=12, pady=8, cursor="hand2",
+        return tk.Button(
+            padre, text=texto, command=comando, relief=tk.FLAT, cursor="hand2",
+            font=("Segoe UI", 10, "bold"), padx=12, pady=6,
+            bg=DORADO if dorado else CAMPO, fg=FONDO if dorado else TEXTO,
+            activebackground="#e5c158" if dorado else "#374151",
+            activeforeground=FONDO if dorado else TEXTO,
         )
-        boton.bind("<Button-1>", lambda e: comando())
-        boton.bind("<Enter>", lambda e: boton.config(bg=hover))
-        boton.bind("<Leave>", lambda e: boton.config(bg=fondo))
-        return boton
 
     def _crear_widgets(self):
         tk.Label(
@@ -146,7 +138,7 @@ class VentanaEntradaSalida:
 
         self._etiqueta(form, "Matrícula")
         self.entry_matricula = self._campo(form, self.var_matricula, "Ej. ABC1234", limite=controlador.LONGITUD_MATRICULA)
-        self.entry_matricula.bind("<Return>", lambda e: self._verificar_vehiculo())
+        self.entry_matricula.bind("<Return>", lambda e: self._al_confirmar_matricula())
         self.entry_matricula.bind("<FocusOut>", lambda e: self._verificar_vehiculo())
         self.entry_matricula.bind("<KeyRelease>", self._al_escribir_matricula)
 
@@ -154,6 +146,11 @@ class VentanaEntradaSalida:
             form, textvariable=self.var_estado, bg=PANEL, fg=DORADO, justify=tk.LEFT,
             wraplength=240, font=("Segoe UI", 8),
         ).pack(anchor=tk.W, pady=(0, 10))
+
+        self._etiqueta(form, "Cajón")
+        self.selector = SelectorCajon(form, self.var_cajon, self._cajones_libres)
+        self.selector.pack(fill=tk.X, pady=(2, 6))
+        self.selector.al_confirmar(self._al_confirmar_cajon)
 
         self._etiqueta(form, "Cliente (solo si el vehículo es nuevo)")
         self.combo_cliente = ttk.Combobox(
@@ -197,14 +194,15 @@ class VentanaEntradaSalida:
         estilo.map("Parking.Treeview", background=[("selected", DORADO)], foreground=[("selected", FONDO)])
 
         self.tabla = ttk.Treeview(
-            lista, columns=("matricula", "cliente", "entrada"), show="headings",
+            lista, columns=("cajon", "matricula", "cliente", "entrada"), show="headings",
             style="Parking.Treeview", selectmode="browse", height=14,
         )
         for columna, titulo, ancho in (
-            ("matricula", "Matrícula", 100), ("cliente", "Cliente", 140), ("entrada", "Entrada", 140),
+            ("cajon", "Cajón", 60), ("matricula", "Matrícula", 90),
+            ("cliente", "Cliente", 130), ("entrada", "Entrada", 130),
         ):
             self.tabla.heading(columna, text=titulo)
-            self.tabla.column(columna, width=ancho, anchor=tk.W)
+            self.tabla.column(columna, width=ancho, anchor="center")
         self.tabla.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
         self.tabla.bind("<<TreeviewSelect>>", self._al_seleccionar)
 
@@ -240,7 +238,10 @@ class VentanaEntradaSalida:
         for fila in filas:
             self.tabla.insert(
                 "", tk.END, iid=fila["matricula"],
-                values=(fila["matricula"], fila["cliente"], fila["fecha_entrada"].strftime("%d/%m/%Y %H:%M")),
+                values=(
+                    fila["numero_cajon"] or "—", fila["matricula"], fila["cliente"],
+                    fila["fecha_entrada"].strftime("%d/%m/%Y %H:%M"),
+                ),
             )
         self.lbl_total.config(text=f"{len(filas)} vehículo(s)")
 
@@ -262,12 +263,14 @@ class VentanaEntradaSalida:
         if not self.var_matricula.get().strip():
             self.var_estado.set("Escribe una matrícula y presiona Enter.")
             self._habilitar_datos_nuevo(True)
+            self.selector.liberar()
             return None
         try:
             vehiculo = controlador.consultar_vehiculo(self.var_matricula.get())
         except ErrorServicio as error:
             self.var_estado.set(str(error))
             self._habilitar_datos_nuevo(True)
+            self.selector.liberar()
             return None
         except ErrorBD as error:
             messagebox.showerror("Base de datos", str(error), parent=self.ventana)
@@ -279,11 +282,51 @@ class VentanaEntradaSalida:
         else:
             self.var_estado.set("Vehículo nuevo: elige el cliente y captura sus datos.")
             self._habilitar_datos_nuevo(True)
+        self._preparar_cajon()
         return vehiculo
+
+    def _matricula_capturada(self):
+        return controlador.normalizar_matricula(self.var_matricula.get())
+
+    def _cajones_libres(self):
+        try:
+            matricula = self._matricula_capturada()
+        except ErrorServicio:
+            matricula = None
+        return cajones.libres_para_entrada(matricula)
+
+    def _preparar_cajon(self):
+        """Si el vehículo tiene pensión, pone su cajón; si no, deja elegirlo."""
+        try:
+            numero, ocupado_por = cajones.cajon_fijo(self._matricula_capturada())
+        except ErrorBD as error:
+            messagebox.showerror("Base de datos", str(error), parent=self.ventana)
+            return
+        if numero is not None and ocupado_por is None:
+            self.selector.fijar(numero, f"Pensión vigente: cajón {numero}.")
+            return
+        self.selector.liberar()
+        if numero is not None:
+            self.selector.pista.config(text=f"Su cajón {numero} lo ocupa {ocupado_por}. Elige otro.")
+
+    def _al_confirmar_matricula(self):
+        """Enter en la matrícula: revisa el vehículo y pasa al cajón si hay que elegirlo."""
+        self._verificar_vehiculo()
+        if not self.selector.fijo:
+            self.selector.enfocar()
+
+    def _al_confirmar_cajon(self):
+        """Enter en el cajón: registra; si el vehículo es nuevo, pasa a sus datos."""
+        vehiculo = self._verificar_vehiculo()
+        if vehiculo:
+            self._registrar_entrada()
+        else:
+            self.entry_marca.focus_set()
 
     def _limpiar_formulario(self):
         for variable in (self.var_matricula, self.var_marca, self.var_modelo, self.var_color):
             variable.set("")
+        self.selector.limpiar()
         self._habilitar_datos_nuevo(True)
         self.var_estado.set("Escribe una matrícula y presiona Enter.")
         self.entry_matricula.focus()
@@ -294,6 +337,7 @@ class VentanaEntradaSalida:
             resultado = controlador.registrar_entrada(
                 self.var_matricula.get(),
                 self.id_usuario,
+                cajon=self.var_cajon.get(),
                 id_cliente=self.clientes.get(self.var_cliente.get()),
                 marca=self.var_marca.get(),
                 modelo_veh=self.var_modelo.get(),
@@ -308,7 +352,7 @@ class VentanaEntradaSalida:
 
         self._actualizar_lista()
         self._limpiar_formulario()
-        self.var_estado.set(f"Entrada registrada: {resultado['matricula']}.")
+        self.var_estado.set(f"Entrada registrada: {resultado['matricula']}, cajón {resultado['cajon']}.")
 
     def _registrar_salida(self):
         try:
@@ -364,6 +408,7 @@ class CuadroCobro:
         ).pack(anchor=tk.W, pady=(0, 14))
 
         for titulo, valor in (
+            ("Cajón", str(cobro["numero_cajon"] or "—")),
             ("Entrada", cobro["fecha_entrada"].strftime("%d/%m/%Y %H:%M")),
             ("Salida", cobro["fecha_salida"].strftime("%d/%m/%Y %H:%M")),
             ("Tiempo", controlador.formatear_tiempo(cobro["minutos_estancia"])),

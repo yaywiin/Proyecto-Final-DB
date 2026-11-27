@@ -12,7 +12,7 @@ Modelo final de la base de datos `estacionamiento` (MariaDB). Refleja los script
 | Contraseñas | Hash SHA-256 en hexadecimal (64 caracteres) |
 | Pensión | Por fecha y vehículo, por meses completos. Precio mensual y % de descuento (más de 2 años desde su primera pensión) en la tabla `parametros`: $1,200.00 y 10% |
 | Tablas de detalle | Solicitadas por el profesor: `detalle_servicios` (entre vehículos y servicios) y `detalle_cobros` (entre vehículos y cobros) |
-| Cajones | Asignación de cajón físico (`numero_cajon`) en `detalle_servicios` y `pensiones`. Capacidad y distribución configuradas en `parametros`: `total_cajones` (30) y `cajones_por_fila` (10) |
+| Cajones | Asignación de cajón físico (`numero_cajon`) en `detalle_servicios` y `pensiones`. Capacidad y distribución configuradas en `parametros`: `total_cajones` (20) y `cajones_por_fila` (5) |
 
 ## Diagrama ER
 
@@ -136,7 +136,7 @@ erDiagram
 
 **Clientes:** `id_cliente = 1`, "Público general", de paso.
 **Servicios:** `id_servicio = 1` ("Estancia por hora"), `id_servicio = 2` ("Pensión mensual").
-**Parámetros:** `visitas_para_frecuente = 10`, `periodo_dias_frecuente = 30`, `precio_pension_mensual = 1200`, `descuento_pension_2anios = 10`, `total_cajones = 30`, `cajones_por_fila = 10`.
+**Parámetros:** `visitas_para_frecuente = 10`, `periodo_dias_frecuente = 30`, `precio_pension_mensual = 1200`, `descuento_pension_2anios = 10`, `total_cajones = 20`, `cajones_por_fila = 5`.
 
 ## Datos de prueba (`02_datos_prueba.sql`)
 

@@ -4,6 +4,7 @@ Una pensión es un registro de `pensiones`; al contratarla se cobra con un recib
 `cobros` y su desglose en `detalle_cobros` (con `id_pension`).
 """
 
+from app.modelo import cajon_modelo
 from app.modelo.conexion import consultar, transaccion
 
 
@@ -36,6 +37,7 @@ def listar_pensiones():
     """Todas las pensiones, las más recientes primero, con su estado de hoy."""
     return consultar(
         "SELECT p.id_pension, p.matricula, c.nombre AS cliente, p.fecha_inicio, p.fecha_fin, p.monto, "
+        "p.numero_cajon, "
         "CASE WHEN CURDATE() BETWEEN p.fecha_inicio AND p.fecha_fin THEN 'Vigente' "
         "     WHEN CURDATE() < p.fecha_inicio THEN 'Por iniciar' "
         "     ELSE 'Vencida' END AS estado "
@@ -44,16 +46,18 @@ def listar_pensiones():
     )
 
 
-def contratar_pension(id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto):
+def contratar_pension(id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto, numero_cajon):
     """Guarda la pensión, el recibo y su desglose en una sola transacción.
 
     Devuelve (id_pension, id_cobro).
     """
     with transaccion() as cursor:
+        cajon_modelo.bloquear(cursor)
         cursor.execute(
-            "INSERT INTO pensiones (id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            (id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto),
+            "INSERT INTO pensiones "
+            "(id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto, numero_cajon) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (id_cliente, matricula, id_usuario, fecha_inicio, fecha_fin, monto, numero_cajon),
         )
         id_pension = cursor.lastrowid
         cursor.execute(
