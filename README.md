@@ -4,7 +4,7 @@ Proyecto final de la materia de Base de Datos (Prof. Ramiro Luperco Coronel). Eq
 
 ## ¿Qué es?
 
-Un sistema de escritorio para administrar un estacionamiento público. Registra la entrada y la salida de los vehículos, calcula cuánto se debe cobrar según el tiempo de estancia, controla las pensiones y genera reportes de demanda e ingresos.
+Un sistema de escritorio para administrar un estacionamiento público. Registra la entrada y la salida de los vehículos, asigna un cajón a cada uno y muestra el croquis del estacionamiento, calcula cuánto se debe cobrar según el tiempo de estancia, controla las pensiones y genera reportes de demanda e ingresos.
 
 ## Objetivo
 
@@ -25,22 +25,29 @@ Entregar un sistema que cumpla los 10 requisitos del enunciado, con la base de d
 ### Perfiles
 
 - **Admin:** control operativo de todo el sistema (usuarios, clientes, vehículos, pensiones y reportes).
-- **Cobrador:** solo opera: registra entradas y salidas (con su cobro) y atiende clientes y vehículos. No ve Usuarios, Pensiones ni Reportes.
+- **Cobrador:** solo opera: registra entradas y salidas (con su cobro), consulta el croquis y atiende clientes y vehículos. No ve Usuarios, Pensiones ni Reportes.
 
 Ambos entran con usuario y contraseña. La contraseña se guarda como hash SHA-256, nunca en texto plano.
 
 ### Clientes
 
 - Por defecto todos entran como **"Público general"** (`cliente_id = 1`) y pagan tarifa normal.
-- Quien quiera puede registrarse con sus datos.
+- Quien quiera puede registrarse con su nombre y teléfono.
 - Un cliente registrado se vuelve **frecuente** automáticamente al llegar a 10 visitas en 30 días (un trigger de la base lo hace), y desde entonces paga la tarifa de frecuente.
 - Las pensiones solo se pueden contratar con clientes registrados.
 
 ### Entrada y salida
 
-1. El cobrador registra la **entrada**: matrícula, datos del vehículo y del cliente, fecha y hora.
-2. Al salir, el cobrador registra la **salida** y el sistema calcula el monto.
-3. Se guarda el **cobro** con el monto, el tiempo de estancia y el cobrador que lo hizo.
+1. El cobrador registra la **entrada** con la matrícula y el cajón. Si el vehículo es nuevo, también captura cliente, marca, modelo y color. La fecha y la hora se guardan solas.
+2. Al salir, el cobrador registra la **salida**, el sistema calcula el monto y el cajón queda libre.
+3. Se guarda el **cobro** con el monto y el cobrador que lo hizo.
+
+### Cajones y croquis
+
+- El estacionamiento tiene **20 cajones**, en 4 filas de 5. Las dos cantidades viven en la tabla `parametros` (`total_cajones` y `cajones_por_fila`).
+- El selector de cajón permite escribir y solo lista los disponibles.
+- Una pensión **aparta su cajón** durante todo el periodo, aunque el vehículo no esté, y el vehículo pensionado entra a ese cajón. Si está dentro al contratar una pensión que empieza ya, se aparta el cajón que ocupa.
+- El módulo **Estacionamiento** dibuja el croquis: verde libre, rojo ocupado y morado pensión. Al pasar el cursor se ven los datos del cajón, y "Actualizar" vuelve a leer la base.
 
 ### Tarifa (cajón)
 
@@ -70,7 +77,7 @@ Se controla por fecha y por vehículo, y solo la contrata el administrador, con 
 
 ## Estructura de la base de datos
 
-Tablas: `usuarios`, `clientes`, `vehiculos`, `servicios` (catálogo), `detalle_servicios` (entradas y salidas), `pensiones`, `cobros` (recibo), `detalle_cobros` (desglose), `precios` y `parametros`. Además hay 4 vistas para los reportes, una función y un procedimiento de cobro, y 5 triggers. El detalle, el diagrama ER y las reglas de integridad están en [Modelo_Datos.md](docs/Modelo_Datos.md).
+Tablas: `usuarios`, `clientes`, `vehiculos`, `servicios` (catálogo), `detalle_servicios` (entradas y salidas), `pensiones`, `cobros` (recibo), `detalle_cobros` (desglose), `precios` y `parametros`. Además hay 4 vistas para los reportes, funciones y un procedimiento de cobro, y 9 triggers. El detalle, el diagrama ER y las reglas de integridad están en [Modelo_Datos.md](docs/Modelo_Datos.md).
 
 ## Reparto del equipo
 
@@ -95,14 +102,14 @@ Proyecto Final/
     ├── main.py            # comprueba la conexión
     ├── config.example.py  # plantilla de configuración (config.py no se sube)
     ├── modelo/            # acceso a la BD; conexion.py abre la conexión
-    ├── vista/             # ventanas Tkinter (login, menú, entradas y salidas, pensiones, reportes, usuarios, clientes y vehículos)
+    ├── vista/             # ventanas Tkinter (login, menú, entradas y salidas, croquis, pensiones, reportes, usuarios, clientes y vehículos)
     └── controlador/       # reglas y validaciones de cada módulo
 ```
 
 ## Cómo ejecutarlo
 
 1. Enciende MySQL en XAMPP.
-2. Crea la base y sus datos con los scripts de `database/` (ver [docs/Guia_Inicio.md](docs/Guia_Inicio.md)).
+2. Crea la base y sus datos con los scripts de `database/` (ver [docs/Guia_Inicio.md](docs/Guia_Inicio.md)). Si tenías una base anterior a los cajones, vuelve a correrlos.
 3. Abre la app: `python -m app.vista.login_vista`.
 4. Entra con `admin` / `admin123` (administrador) o `cobrador` / `cobrador123`.
 
@@ -132,6 +139,7 @@ El recorrido completo de la demo está en [docs/Guia_Demo.md](docs/Guia_Demo.md)
 - [x] Pensiones.
 - [x] Pantalla de reportes.
 - [x] Pruebas con datos de ejemplo.
+- [x] Correcciones del profesor: número de cajón y croquis del estacionamiento.
 - [ ] Resolver con el profesor qué significa "por cada 5 horas" para clientes frecuentes (hoy se aplica la tarifa escalonada de $26 y $22).
 - [ ] Ensayo de la demo y entrega.
 
