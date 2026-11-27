@@ -175,7 +175,8 @@ class VentanaEntradaSalida:
         self._etiqueta(form, "Marca")
         self.entry_marca = self._campo(form, self.var_marca, "Ej. Nissan")
         self._etiqueta(form, "Modelo")
-        self.entry_modelo = self._campo(form, self.var_modelo, "Ej. Versa", solo_letras=True)
+        self.entry_modelo = self._campo(form, self.var_modelo, "Ej. Versa")
+
         self._etiqueta(form, "Color")
         self.combo_color = ttk.Combobox(
             form,
@@ -312,6 +313,15 @@ class VentanaEntradaSalida:
             messagebox.showwarning("Entrada", "Ingresa la matrícula del vehículo.", parent=self.ventana)
             return
 
+        mat = self.var_matricula.get().strip().replace("-", "")
+        if len(mat) < 5 or not mat.isalnum() or not (any(c.isalpha() for c in mat) and any(c.isdigit() for c in mat)):
+            messagebox.showwarning(
+                "Entrada",
+                "Ingresa una matrícula válida (mínimo 5 caracteres con letras y números, ej. ABC1234).",
+                parent=self.ventana,
+            )
+            return
+
         vehiculo = self._verificar_vehiculo()
         if vehiculo is None:
             if (
@@ -323,6 +333,15 @@ class VentanaEntradaSalida:
                 messagebox.showwarning(
                     "Entrada",
                     "Para un vehículo nuevo debes llenar cliente, marca, modelo y color.",
+                    parent=self.ventana,
+                )
+                return
+
+            marca = self.var_marca.get().strip()
+            if not all(c.isalpha() or c == " " for c in marca):
+                messagebox.showwarning(
+                    "Entrada",
+                    "La marca solo debe contener letras.",
                     parent=self.ventana,
                 )
                 return

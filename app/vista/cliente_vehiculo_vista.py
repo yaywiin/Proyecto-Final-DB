@@ -210,10 +210,12 @@ class VentanaClientesVehiculos:
 
         self._etiqueta(form, "Nombre completo")
         self.entry_cli_nombre = self._campo(
-            form, self.var_cli_nombre, limite=controlador.LONGITUD_NOMBRE
+            form, self.var_cli_nombre, limite=controlador.LONGITUD_NOMBRE, solo_letras=True,
         )
 
-        self._etiqueta(form, "Teléfono (opcional)")
+        self._etiqueta(form, "Teléfono")
+
+        self._etiqueta(form, "Teléfono")
         self._campo(
           form,
           self.var_cli_telefono,
@@ -321,15 +323,10 @@ class VentanaClientesVehiculos:
         self.combo_veh_cliente.pack(fill=tk.X, ipady=3, pady=(2, 10))
 
         self._etiqueta(form, "Marca")
-        self._campo(form, self.var_veh_marca, limite=controlador.LONGITUD_MARCA)
+        self._campo(form, self.var_veh_marca, limite=controlador.LONGITUD_MARCA, solo_letras=True,)
 
         self._etiqueta(form, "Modelo")
-        self._campo(
-            form,
-            self.var_veh_modelo,
-            limite=controlador.LONGITUD_MODELO,
-            solo_letras=True,
-        )
+        self._campo(form, self.var_veh_modelo, limite=controlador.LONGITUD_MODELO)
 
         self._etiqueta(form, "Color")
         self.combo_veh_color = ttk.Combobox(
@@ -626,6 +623,16 @@ class VentanaClientesVehiculos:
                 parent=self.ventana,
             )
             return
+
+        mat = self.var_veh_matricula.get().strip().replace("-", "")
+        if len(mat) < 5 or not mat.isalnum() or not (any(c.isalpha() for c in mat) and any(c.isdigit() for c in mat)):
+            messagebox.showwarning(
+                "Vehículos",
+                "Ingresa una matrícula válida (mínimo 5 caracteres con letras y números, ej. ABC1234).",
+                parent=self.ventana,
+            )
+            return
+        
         try:
             if self.vehiculo_seleccionado is None:
                 controlador.crear_vehiculo(
