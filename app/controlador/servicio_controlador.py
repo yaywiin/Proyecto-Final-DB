@@ -4,13 +4,11 @@ La vista llama a estas funciones; si algo no se puede hacer lanzan ErrorServicio
 con un mensaje listo para mostrar.
 """
 
+from app.controlador import cajon_controlador as cajones
+from app.controlador.errores import ErrorServicio
 from app.modelo import servicio_modelo as modelo
 
 LONGITUD_MATRICULA = 7
-
-
-class ErrorServicio(Exception):
-    """Error de regla de negocio con un mensaje para el usuario."""
 
 
 def normalizar_matricula(texto):
@@ -42,8 +40,12 @@ def consultar_vehiculo(matricula):
     return modelo.buscar_vehiculo(normalizar_matricula(matricula))
 
 
-def registrar_entrada(matricula, id_usuario, id_cliente=None, marca=None, modelo_veh=None, color=None):
-    """Registra la entrada. Devuelve un resumen para mostrar al cobrador."""
+def registrar_entrada(matricula, id_usuario, cajon=None, id_cliente=None, marca=None, modelo_veh=None, color=None):
+    """Registra la entrada. Devuelve un resumen para mostrar al cobrador.
+
+    Un vehículo con pensión vigente entra a su cajón, sin importar `cajon`, salvo
+    que otro vehículo lo esté ocupando.
+    """
     matricula = normalizar_matricula(matricula)
 
     if modelo.buscar_entrada_abierta(matricula):
@@ -61,8 +63,14 @@ def registrar_entrada(matricula, id_usuario, id_cliente=None, marca=None, modelo
             "color": _limpiar(color),
         }
 
-    modelo.registrar_entrada(matricula, id_usuario, vehiculo_nuevo)
-    return {"matricula": matricula, "vehiculo_nuevo": vehiculo_nuevo is not None}
+    fijo, ocupado_por = cajones.cajon_fijo(matricula)
+    if fijo is not None and ocupado_por is None:
+        numero = fijo
+    else:
+        numero = cajones.validar_cajon(cajon, cajones.libres_para_entrada(matricula))
+
+    modelo.registrar_entrada(matricula, id_usuario, numero, vehiculo_nuevo)
+    return {"matricula": matricula, "cajon": numero, "vehiculo_nuevo": vehiculo_nuevo is not None}
 
 
 def previsualizar_salida(matricula):
@@ -80,6 +88,7 @@ def previsualizar_salida(matricula):
     fecha_salida = modelo.hora_actual()
     cobro = modelo.calcular_cobro(entrada["id_detalle_servicio"], fecha_salida)
     cobro["fecha_salida"] = fecha_salida
+    cobro["numero_cajon"] = entrada["numero_cajon"]
     return cobro
 
 

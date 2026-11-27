@@ -159,7 +159,7 @@ CREATE TRIGGER tg_validar_cajon_servicio_insert
 BEFORE INSERT ON detalle_servicios
 FOR EACH ROW
 BEGIN
-    DECLARE v_total_cajones     INT DEFAULT 30;
+    DECLARE v_total_cajones     INT DEFAULT 20;
     DECLARE v_ocupado           INT DEFAULT 0;
     DECLARE v_reservado_pension INT DEFAULT 0;
 
@@ -171,7 +171,7 @@ BEGIN
         LIMIT 1;
 
         IF v_total_cajones IS NULL THEN
-            SET v_total_cajones = 30;
+            SET v_total_cajones = 20;
         END IF;
 
         -- Regla a: Cajón dentro del rango permitido
@@ -213,7 +213,7 @@ CREATE TRIGGER tg_validar_cajon_servicio_update
 BEFORE UPDATE ON detalle_servicios
 FOR EACH ROW
 BEGIN
-    DECLARE v_total_cajones     INT DEFAULT 30;
+    DECLARE v_total_cajones     INT DEFAULT 20;
     DECLARE v_ocupado           INT DEFAULT 0;
     DECLARE v_reservado_pension INT DEFAULT 0;
 
@@ -225,7 +225,7 @@ BEGIN
         LIMIT 1;
 
         IF v_total_cajones IS NULL THEN
-            SET v_total_cajones = 30;
+            SET v_total_cajones = 20;
         END IF;
 
         -- Regla a: Cajón dentro del rango permitido
@@ -275,7 +275,7 @@ CREATE TRIGGER tg_validar_cajon_pension_insert
 BEFORE INSERT ON pensiones
 FOR EACH ROW
 BEGIN
-    DECLARE v_total_cajones INT DEFAULT 30;
+    DECLARE v_total_cajones INT DEFAULT 20;
     DECLARE v_traslape      INT DEFAULT 0;
     DECLARE v_ocupado       INT DEFAULT 0;
 
@@ -287,7 +287,7 @@ BEGIN
         LIMIT 1;
 
         IF v_total_cajones IS NULL THEN
-            SET v_total_cajones = 30;
+            SET v_total_cajones = 20;
         END IF;
 
         -- Regla a: Cajón dentro del rango permitido
@@ -329,7 +329,7 @@ CREATE TRIGGER tg_validar_cajon_pension_update
 BEFORE UPDATE ON pensiones
 FOR EACH ROW
 BEGIN
-    DECLARE v_total_cajones INT DEFAULT 30;
+    DECLARE v_total_cajones INT DEFAULT 20;
     DECLARE v_traslape      INT DEFAULT 0;
     DECLARE v_ocupado       INT DEFAULT 0;
 
@@ -341,7 +341,7 @@ BEGIN
         LIMIT 1;
 
         IF v_total_cajones IS NULL THEN
-            SET v_total_cajones = 30;
+            SET v_total_cajones = 20;
         END IF;
 
         -- Regla a: Cajón dentro del rango permitido

@@ -14,9 +14,9 @@ from app.controlador import pension_controlador as controlador
 from app.controlador.permisos import es_admin
 from app.controlador.servicio_controlador import LONGITUD_MATRICULA, ErrorServicio
 from app.modelo.conexion import ErrorBD
-from app.vista.entrada_salida_vista import (
-    CAMPO, DORADO, FONDO, PANEL, PLACEHOLDER, TEXTO, TEXTO_SUAVE, EntryConPlaceholder,
-)
+from app.vista.entrada_salida_vista import EntryConPlaceholder
+from app.vista.estilo import CAMPO, DORADO, FONDO, PANEL, PLACEHOLDER, TEXTO, TEXTO_SUAVE
+from app.vista.selector_cajon import SelectorCajon
 
 
 def abrir_pensiones(parent, usuario):
@@ -49,14 +49,17 @@ class VentanaPensiones:
         self.ventana.configure(bg=FONDO)
         self.ventana.resizable(False, False)
         self.ventana.transient(parent)
-        self._centrar(parent, 900, 560)
+        self._centrar(parent, 940, 580)
 
         self.var_matricula = tk.StringVar()
         self.var_fecha = tk.StringVar(value=date.today().strftime(controlador.FORMATO_FECHA))
         self.var_meses = tk.StringVar(value="1")
+        self.var_cajon = tk.StringVar()
         self.var_estado = tk.StringVar(value="Escribe la matrícula del vehículo.")
 
         self._crear_widgets()
+        for variable in (self.var_matricula, self.var_fecha, self.var_meses):
+            variable.trace_add("write", lambda *_: self._revisar_cajon())
         self._actualizar_lista()
         self.entry_matricula.focus()
 
@@ -97,13 +100,18 @@ class VentanaPensiones:
 
         self._etiqueta(form, "Matrícula")
         self.entry_matricula = self._campo(form, self.var_matricula, "Ej. ABC1234", limite=LONGITUD_MATRICULA)
-        self.entry_matricula.bind("<Return>", lambda e: self._contratar())
+        self.entry_matricula.bind("<Return>", lambda e: self._al_confirmar_matricula())
 
         self._etiqueta(form, "Fecha de inicio (AAAA-MM-DD)")
         self._campo(form, self.var_fecha, "Ej. 2026-11-23")
 
         self._etiqueta(form, "Meses")
         self._campo(form, self.var_meses, "Ej. 1", limite=2)
+
+        self._etiqueta(form, "Cajón")
+        self.selector = SelectorCajon(form, self.var_cajon, self._cajones_libres)
+        self.selector.pack(fill=tk.X, pady=(2, 8))
+        self.selector.al_confirmar(self._contratar)
 
         tk.Label(
             form, textvariable=self.var_estado, bg=PANEL, fg=DORADO, justify=tk.LEFT,
@@ -135,8 +143,8 @@ class VentanaPensiones:
         estilo.map("Parking.Treeview", background=[("selected", DORADO)], foreground=[("selected", FONDO)])
 
         columnas = (
-            ("matricula", "Matrícula", 80), ("cliente", "Cliente", 120), ("inicio", "Inicio", 85),
-            ("fin", "Fin", 85), ("monto", "Monto", 80), ("estado", "Estado", 80),
+            ("cajon", "Cajón", 50), ("matricula", "Matrícula", 75), ("cliente", "Cliente", 105),
+            ("inicio", "Inicio", 80), ("fin", "Fin", 80), ("monto", "Monto", 75), ("estado", "Estado", 75),
         )
         self.tabla = ttk.Treeview(
             lista, columns=[c[0] for c in columnas], show="headings", style="Parking.Treeview",
@@ -160,16 +168,61 @@ class VentanaPensiones:
             self.tabla.insert(
                 "", tk.END, tags=(fila["estado"],),
                 values=(
-                    fila["matricula"], fila["cliente"], _fecha(fila["fecha_inicio"]),
+                    fila["numero_cajon"] or "—", fila["matricula"], fila["cliente"], _fecha(fila["fecha_inicio"]),
                     _fecha(fila["fecha_fin"]), f"${fila['monto']:,.2f}", fila["estado"],
                 ),
             )
         self.lbl_total.config(text=f"{len(filas)} pensión(es)")
 
+    def _cajones_libres(self):
+        return controlador.cajones_disponibles(
+            self.var_matricula.get(), self.var_fecha.get(), self.var_meses.get()
+        )
+
+    def _revisar_cajon(self, proponer=True):
+        """Ajusta el selector según si el vehículo está dentro.
+
+        Dentro y con la pensión desde hoy: su cajón queda puesto y bloqueado. Dentro y con
+        la pensión para después: solo se propone. En otro caso se deja elegir.
+        """
+        datos = (self.var_matricula.get(), self.var_fecha.get(), self.var_meses.get())
+        try:
+            numero = controlador.cajon_obligado(*datos)
+            if numero is not None:
+                if numero in self._cajones_libres():
+                    nota = f"Está dentro: su pensión va en el cajón {numero}."
+                else:
+                    nota = f"Está en el cajón {numero}, no disponible en esas fechas. Registra su salida."
+                self.selector.fijar(numero, nota)
+                return
+            self.selector.liberar()
+            if proponer:
+                self._sugerir_cajon()
+        except ErrorServicio:
+            self.selector.liberar()  # Datos incompletos: se avisará al contratar
+        except ErrorBD as error:
+            self.selector.liberar()
+            self.selector.pista.config(text=str(error))
+
+    def _sugerir_cajon(self):
+        """Si el vehículo ya está dentro y no se ha elegido cajón, propone el suyo."""
+        if self.var_cajon.get():
+            return
+        numero = controlador.cajon_sugerido(self.var_matricula.get())
+        if numero is not None and numero in self._cajones_libres():
+            self.var_cajon.set(str(numero))
+            self.selector.pista.config(text=f"El vehículo está en el cajón {numero}.")
+
+    def _al_confirmar_matricula(self):
+        self._revisar_cajon()
+        if not self.selector.fijo:
+            self.selector.enfocar()
+
     def _contratar(self):
+        self._revisar_cajon(proponer=False)  # Pudo entrar o salir desde que se escribió
         try:
             pension = controlador.previsualizar_pension(
-                self.var_matricula.get(), self.var_fecha.get(), self.var_meses.get()
+                self.var_matricula.get(), self.var_fecha.get(), self.var_meses.get(), self.var_cajon.get()
             )
         except ErrorServicio as error:
             messagebox.showwarning("Pensión", str(error), parent=self.ventana)
@@ -194,6 +247,7 @@ class VentanaPensiones:
         self._actualizar_lista()
         self.var_matricula.set("")
         self.var_meses.set("1")
+        self.selector.limpiar()
         self.var_estado.set(f"Pensión registrada: {pension['matricula']}, ${pension['monto']:,.2f}.")
         self.entry_matricula.focus()
 
@@ -221,6 +275,7 @@ class CuadroPension:
         ).pack(anchor=tk.W, pady=(0, 14))
 
         filas = [
+            ("Cajón", str(pension["cajon"])),
             ("Inicio", _fecha(pension["fecha_inicio"])),
             ("Fin", _fecha(pension["fecha_fin"])),
             ("Meses", str(pension["meses"])),

@@ -239,5 +239,5 @@ INSERT INTO parametros (clave, valor) VALUES
 
 -- Parámetros del croquis y distribución de cajones
 INSERT INTO parametros (clave, valor) VALUES
-  ('total_cajones', '30'),
-  ('cajones_por_fila', '10');
+  ('total_cajones', '20'),
+  ('cajones_por_fila', '5');

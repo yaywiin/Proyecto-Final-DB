@@ -36,10 +36,11 @@ La matrícula admite hasta 7 letras y números.
 
 | Haz esto | Debe pasar |
 |---|---|
-| Entradas y Salidas → matrícula `DEM1234` → Registrar entrada | Aparece en "Dentro ahora" |
-| Una matrícula nueva (por ejemplo `NVA0001`), con cliente y marca | Se crea el vehículo y entra |
+| Entradas y Salidas → matrícula `DEM1234`, cajón `3` → Registrar entrada | Aparece en "Dentro ahora" con su cajón |
+| Una matrícula nueva (por ejemplo `NVA0001`), con cliente y marca, y despliega el selector de cajón | No aparecen el 3 ni el 5 (ocupados). Elige `4`: se crea el vehículo y entra |
+| Otra matrícula, escribe `5` como cajón → Registrar entrada | Aviso "El cajón 5 no está disponible" |
 | Registrar entrada de `DEM1234` otra vez | Aviso "ya está dentro" |
-| Registrar salida de `NVA0001` | Cuadro de cobro con el monto. Esc cancela y sigue dentro; Cobrar la saca |
+| Registrar salida de `NVA0001` | Cuadro de cobro con el cajón y el monto. Esc cancela y sigue dentro; Cobrar la saca y libera el cajón 4 |
 
 Para ver un monto real, retrasa 7 horas la entrada en phpMyAdmin (base `estacionamiento`, pestaña SQL):
 
@@ -52,10 +53,12 @@ La salida de `DEM1234` da **$200.00** (cliente de paso). Con `MNP2345`, de un cl
 
 ## 5. Pensiones (admin)
 
-1. Pensiones → matrícula `DEM1234`, fecha de hoy, 1 mes → cuadro con **$1,200.00** → Cobrar.
-2. Repite lo mismo: avisa que ya tiene una pensión en esas fechas.
-3. Prueba con `XYZ9876` (Público general): la rechaza, porque es solo para clientes registrados.
-4. Registra la entrada y la salida de `DEM1234`: el cobro es **$0.00** por pensión vigente.
+1. Si `DEM1234` no está dentro, registra su entrada en el cajón `3`. En Pensiones, escribe su matrícula: el cajón `3` aparece puesto y bloqueado, porque la pensión de un vehículo que está dentro va en su cajón actual.
+2. Registra su salida. De vuelta en Pensiones, escribe `DEM1234`, cajón `10`, fecha de hoy, 1 mes → cuadro con **$1,200.00** → Cobrar.
+3. Repite lo mismo: avisa que ya tiene una pensión en esas fechas.
+4. Prueba con `XYZ9876` (Público general): la rechaza, porque es solo para clientes registrados.
+5. Registra la entrada de `DEM1234`: el cajón `10` aparece puesto y bloqueado. Registra la salida: el cobro es **$0.00** por pensión vigente.
+6. Registra otro vehículo e intenta el cajón `10`: no está disponible, porque lo aparta la pensión.
 
 ## 6. Reportes (admin)
 
