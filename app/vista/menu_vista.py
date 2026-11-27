@@ -3,6 +3,7 @@ from tkinter import messagebox
 
 from app.controlador.permisos import filtrar_modulos, obtener_rol, tiene_permiso
 from app.vista.entrada_salida_vista import abrir_entrada_salida
+from app.vista.estacionamiento_vista import abrir_estacionamiento
 from app.vista.pensiones_vista import abrir_pensiones
 from app.vista.reportes_vista import abrir_reportes
 from app.vista.usuario_vista import abrir_usuarios
@@ -97,6 +98,7 @@ class VentanaMenu:
         modulos = [
             ("Entradas y Salidas", "Registro de acceso vehicular"),
             ("Cobros", "Tarifa proporcional y liquidación"),
+            ("Estacionamiento", "Croquis y disponibilidad de cajones"),
             ("Pensiones", "Gestión de espacios exclusivos"),
             ("Clientes", "Directorio y estatus VIP"),
             ("Vehículos", "Control por matrícula y gama"),
@@ -161,6 +163,9 @@ class VentanaMenu:
         if modulo in ("Entradas y Salidas", "Cobros"):
             # El cobro se hace al registrar la salida, en la misma ventana.
             abrir_entrada_salida(self.root, self.usuario)
+            return
+        if modulo == "Estacionamiento":
+            abrir_estacionamiento(self.root, self.usuario)
             return
         if modulo == "Clientes":
             abrir_clientes_vehiculos(self.root, self.usuario, pestana="clientes")

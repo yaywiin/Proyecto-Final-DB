@@ -3,6 +3,7 @@
 MODULOS_ADMIN = (
     "Entradas y Salidas",
     "Cobros",
+    "Estacionamiento",
     "Pensiones",
     "Clientes",
     "Vehículos",
@@ -13,6 +14,7 @@ MODULOS_ADMIN = (
 MODULOS_COBRADOR = (
     "Entradas y Salidas",
     "Cobros",
+    "Estacionamiento",
     "Clientes",
     "Vehículos",
 )
