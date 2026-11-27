@@ -8,50 +8,16 @@ Se abre desde el menú principal:
 
 import math
 import tkinter as tk
+from tkinter import messagebox
 
-FONDO = "#0b0f19"
-PANEL = "#111827"
-CAMPO = "#1f2937"
+from app.controlador.mapa_controlador import estado_del_mapa
+from app.vista.estilo import DORADO, FONDO, PANEL, TEXTO, TEXTO_SUAVE
+from app.vista.mapa_resumen import COLORES, RecuadroCajon, ResumenCajones
+
 ASFALTO = "#161e2e"
 LINEA_CARRIL = "#374151"
-DORADO = "#d4af37"
-TEXTO = "#f3f4f6"
-TEXTO_SUAVE = "#9ca3af"
-
-# Colores por estado del cajón: (fondo, borde, texto)
-COLORES_ESTADO = {
-    "libre": ("#14532d", "#22c55e", "#dcfce7"),
-    "ocupado": ("#7f1d1d", "#ef4444", "#fee2e2"),
-    "pension": ("#4c1d95", "#a855f7", "#f3e8ff"),
-}
-
-# Datos provisionales mientras se integra Issue #44 (consulta real a BD)
-TOTAL_CAJONES_DEMO = 20
-CAJONES_POR_FILA_DEMO = 5
-
-
-def _datos_demo(total_cajones=TOTAL_CAJONES_DEMO):
-    """Genera datos de prueba con el formato acordado para Issue #44."""
-    muestras = {
-        2: ("ocupado", "ABC1234"),
-        5: ("ocupado", "JKL4567"),
-        7: ("pension", "MNP2345"),
-        8: ("pension", "QRS8901"),
-        12: ("ocupado", "XYZ7890"),
-        15: ("pension", "K7P06V"),
-        18: ("ocupado", "DEF3456"),
-    }
-    cajones = []
-    for num in range(1, total_cajones + 1):
-        estado, matricula = muestras.get(num, ("libre", None))
-        cajones.append(
-            {
-                "numero": num,
-                "estado": estado,
-                "matricula": matricula,
-            }
-        )
-    return cajones
+BORDE_CAJON = "#0b0f19"
+TEXTO_CAJON = "#ffffff"
 
 
 def abrir_estacionamiento(parent, usuario=None):
@@ -67,14 +33,10 @@ class VentanaEstacionamiento:
         self.ventana.configure(bg=FONDO)
         self.ventana.resizable(False, False)
         self.ventana.transient(parent)
-        self._centrar(parent, 860, 660)
+        self._centrar(parent, 860, 680)
 
         self._crear_widgets()
-        self.dibujar_croquis(
-            cajones=_datos_demo(TOTAL_CAJONES_DEMO),
-            total_cajones=TOTAL_CAJONES_DEMO,
-            cajones_por_fila=CAJONES_POR_FILA_DEMO,
-        )
+        self.actualizar()
 
     # ------------------------------------------------------------------ vista
     def _centrar(self, parent, ancho, alto):
@@ -91,10 +53,9 @@ class VentanaEstacionamiento:
             font=("Segoe UI", 10, "bold"),
         ).pack(anchor=tk.W, padx=24, pady=(16, 8))
 
-        # Espacio reservado arriba para la leyenda, el conteo y el botón "Actualizar" (Issue #44)
-        self.barra_info = tk.Frame(self.ventana, bg=PANEL, height=48, padx=16, pady=10)
-        self.barra_info.pack(fill=tk.X, padx=24, pady=(0, 12))
-        self.barra_info.pack_propagate(False)
+        # Leyenda con conteo por estado y botón "Actualizar" (Issue #44)
+        self.resumen = ResumenCajones(self.ventana, al_actualizar=self.actualizar)
+        self.resumen.pack(fill=tk.X, padx=24, pady=(0, 12))
 
         # Contenedor del croquis
         contenedor = tk.Frame(self.ventana, bg=PANEL, padx=14, pady=14)
@@ -103,22 +64,38 @@ class VentanaEstacionamiento:
         self.canvas = tk.Canvas(
             contenedor,
             width=784,
-            height=504,
+            height=520,
             bg=ASFALTO,
             highlightthickness=1,
             highlightbackground=LINEA_CARRIL,
         )
         self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.recuadro = RecuadroCajon(self.canvas)
+
+    # ------------------------------------------------------------------ datos
+    def actualizar(self):
+        """Consulta el estado real de los cajones y redibuja el croquis."""
+        try:
+            mapa = estado_del_mapa()
+        except Exception as err:
+            messagebox.showerror(
+                "Error al cargar el croquis",
+                f"No se pudo consultar el estado del estacionamiento:\n{err}",
+                parent=self.ventana,
+            )
+            return
+
+        self.recuadro.ocultar()
+        self.dibujar_croquis(
+            cajones=mapa["cajones"],
+            total_cajones=mapa["total_cajones"],
+            cajones_por_fila=mapa["cajones_por_fila"],
+        )
+        self.resumen.mostrar(mapa)
 
     # ---------------------------------------------------------------- croquis
     def dibujar_croquis(self, cajones, total_cajones, cajones_por_fila):
-        """Dibuja el croquis en el Canvas con filas, pasillos, carril de vuelta y acceso.
-
-        Parámetros:
-            cajones: lista de dicts {"numero": int, "estado": str, "matricula": str | None}
-            total_cajones: cantidad total de cajones del estacionamiento
-            cajones_por_fila: cuántos cajones caben en cada fila
-        """
+        """Dibuja el croquis en el Canvas con filas, pasillos, carril de vuelta y acceso."""
         self.canvas.delete("all")
         self.canvas.update_idletasks()
 
@@ -127,14 +104,13 @@ class VentanaEstacionamiento:
         if ancho_canvas < 100:
             ancho_canvas = 784
         if alto_canvas < 100:
-            alto_canvas = 504
+            alto_canvas = 520
 
         cajones_por_fila = max(1, int(cajones_por_fila))
         total_cajones = max(len(cajones), int(total_cajones))
         num_filas = max(1, math.ceil(total_cajones / cajones_por_fila))
 
-        # Indexar cajones por número (si falta alguno, se asume libre)
-        mapa = {c["numero"]: c for c in cajones}
+        mapa_cajones = {c["numero"]: c for c in cajones}
 
         # Márgenes y zonas del croquis
         margen_izq = 24
@@ -142,13 +118,15 @@ class VentanaEstacionamiento:
         margen_der = 22
         ancho_carril_vuelta = 86
         alto_acceso = 58
-        alto_pasillo = 34
+        alto_pasillo = 32
         separacion_cajon = 10
 
         zona_cajones_ancho = ancho_canvas - margen_izq - margen_der - ancho_carril_vuelta - 14
         zona_cajones_alto = alto_canvas - margen_sup - alto_acceso - 16
 
-        ancho_cajon = (zona_cajones_ancho - separacion_cajon * (cajones_por_fila - 1)) / cajones_por_fila
+        ancho_cajon = (
+            zona_cajones_ancho - separacion_cajon * (cajones_por_fila - 1)
+        ) / cajones_por_fila
         alto_cajon = (zona_cajones_alto - alto_pasillo * (num_filas - 1)) / num_filas
         alto_cajon = min(alto_cajon, 84)
 
@@ -163,7 +141,7 @@ class VentanaEstacionamiento:
         carril_y2 = alto_canvas - 16
         self.canvas.create_rectangle(
             carril_x1, carril_y1, carril_x2, carril_y2,
-            fill="#111827", outline=LINEA_CARRIL, width=1,
+            fill=PANEL, outline=LINEA_CARRIL, width=1,
         )
         carril_cx = (carril_x1 + carril_x2) / 2
         self.canvas.create_line(
@@ -189,10 +167,23 @@ class VentanaEstacionamiento:
                 if numero > total_cajones:
                     break
 
-                datos = mapa.get(numero, {"numero": numero, "estado": "libre", "matricula": None})
+                datos = mapa_cajones.get(
+                    numero,
+                    {
+                        "numero": numero,
+                        "estado": "libre",
+                        "matricula": None,
+                        "cliente": None,
+                        "hora_entrada": None,
+                        "pension_hasta": None,
+                        "dentro": False,
+                        "apartado_para": None,
+                    },
+                )
                 estado = str(datos.get("estado", "libre")).lower()
                 matricula = datos.get("matricula") or ""
-                fondo_c, borde_c, texto_c = COLORES_ESTADO.get(estado, COLORES_ESTADO["libre"])
+                color_cajon = COLORES.get(estado, COLORES["libre"])
+                etiqueta = f"cajon{numero}"
 
                 x1 = margen_izq + col * (ancho_cajon + separacion_cajon)
                 x2 = x1 + ancho_cajon
@@ -201,29 +192,37 @@ class VentanaEstacionamiento:
 
                 self.canvas.create_rectangle(
                     x1, y1, x2, y2,
-                    fill=fondo_c, outline=borde_c, width=2,
+                    fill=color_cajon,
+                    outline=BORDE_CAJON,
+                    width=2,
+                    tags=(etiqueta,),
                 )
 
                 if estado in ("ocupado", "pension") and matricula:
                     self.canvas.create_text(
                         cx, cy - 11,
                         text=f"C-{numero:02d}",
-                        fill=texto_c,
+                        fill=TEXTO_CAJON,
                         font=("Segoe UI", 10, "bold"),
+                        tags=(etiqueta,),
                     )
                     self.canvas.create_text(
                         cx, cy + 12,
                         text=matricula,
                         fill=TEXTO,
                         font=("Segoe UI", 9, "bold"),
+                        tags=(etiqueta,),
                     )
                 else:
                     self.canvas.create_text(
                         cx, cy,
                         text=f"C-{numero:02d}",
-                        fill=texto_c,
+                        fill=TEXTO_CAJON,
                         font=("Segoe UI", 11, "bold"),
+                        tags=(etiqueta,),
                     )
+
+                self.recuadro.conectar(etiqueta, datos)
 
             # Pasillo entre filas
             if fila < num_filas - 1:
@@ -247,7 +246,7 @@ class VentanaEstacionamiento:
         acceso_x2 = carril_x1 - 8
         self.canvas.create_rectangle(
             acceso_x1, acceso_y1, acceso_x2, acceso_y2,
-            fill="#111827", outline=DORADO, width=1,
+            fill=PANEL, outline=DORADO, width=1,
         )
         self.canvas.create_text(
             (acceso_x1 + acceso_x2) / 2,
