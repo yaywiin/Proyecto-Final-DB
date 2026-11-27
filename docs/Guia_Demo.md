@@ -53,11 +53,12 @@ La salida de `DEM1234` da **$200.00** (cliente de paso). Con `MNP2345`, de un cl
 
 ## 5. Pensiones (admin)
 
-1. Pensiones → matrícula `DEM1234` (ya está dentro, así que propone el cajón 3). Cambia el cajón a `10`, fecha de hoy, 1 mes → cuadro con **$1,200.00** → Cobrar.
-2. Repite lo mismo: avisa que ya tiene una pensión en esas fechas.
-3. Prueba con `XYZ9876` (Público general): la rechaza, porque es solo para clientes registrados.
-4. Si `DEM1234` sigue dentro, registra su salida. Después registra su entrada: el cajón `10` aparece puesto y bloqueado. Registra la salida: el cobro es **$0.00** por pensión vigente.
-5. Registra otro vehículo e intenta el cajón `10`: no está disponible, porque lo aparta la pensión.
+1. Si `DEM1234` no está dentro, registra su entrada en el cajón `3`. En Pensiones, escribe su matrícula: el cajón `3` aparece puesto y bloqueado, porque la pensión de un vehículo que está dentro va en su cajón actual.
+2. Registra su salida. De vuelta en Pensiones, escribe `DEM1234`, cajón `10`, fecha de hoy, 1 mes → cuadro con **$1,200.00** → Cobrar.
+3. Repite lo mismo: avisa que ya tiene una pensión en esas fechas.
+4. Prueba con `XYZ9876` (Público general): la rechaza, porque es solo para clientes registrados.
+5. Registra la entrada de `DEM1234`: el cajón `10` aparece puesto y bloqueado. Registra la salida: el cobro es **$0.00** por pensión vigente.
+6. Registra otro vehículo e intenta el cajón `10`: no está disponible, porque lo aparta la pensión.
 
 ## 6. Reportes (admin)
 
